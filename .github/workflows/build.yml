@@ -24,7 +24,7 @@ jobs:
       - name: Build production bundle
         uses: borales/actions-yarn@v4
         with:
-          cmd: build
+          cmd: ghpages-build
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
@@ -32,3 +32,4 @@ jobs:
           folder: .
           single-commit: true
           target-folder: .
+          clean: true
