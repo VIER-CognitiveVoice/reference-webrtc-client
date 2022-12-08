@@ -36,8 +36,10 @@ export async function fetchWebRtcAuthDetails(environment: string, resellerToken:
   return await response.json() as WebRtcAuthenticationDetails
 }
 
+export type HeaderList = Array<[string, string]>
+
 export interface TelephonyApi {
-  call(target: string, timeout: number): Promise<CallApi>
+  call(target: string, timeout: number, extraHeaders?: HeaderList): Promise<CallApi>
   disconnect(): void
 }
 
@@ -45,7 +47,7 @@ export type Tone = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '
 
 export interface CallApi {
   readonly media: MediaStream
-  readonly callCompleted: Promise<void>
+  readonly callCompletion: Promise<void>
   sendTone(tone: Tone): void
   drop(): void
 }
@@ -114,10 +116,12 @@ function setupSessionAndMedia(
   userAgent: UA,
   authDetails: WebRtcAuthenticationDetails,
   target: string,
+  extraSipHeaders: HeaderList,
   abort: AbortSignal,
 ): Promise<[RTCSession, MediaStream]> {
 
   const callOptions: CallOptions = {
+    extraHeaders: extraSipHeaders?.map(([name, value]) => `${name}: ${value}`),
     mediaConstraints: {
       audio: true,
       video: false,
@@ -172,6 +176,7 @@ async function setupCall(
   authDetails: WebRtcAuthenticationDetails,
   target: string,
   timeout: number,
+  extraHeaders: HeaderList,
   ): Promise<CallApi> {
   const abort = new AbortController()
   const timeoutId = window.setTimeout(() => {
@@ -194,6 +199,7 @@ async function setupCall(
     userAgent,
     authDetails,
     target,
+    extraHeaders,
     abort.signal,
   )
   clearConnectionTimeout()
@@ -205,7 +211,7 @@ async function setupCall(
 
   return {
     media: mediaTrack,
-    callCompleted: callCompletedPromise,
+    callCompletion: callCompletedPromise,
     sendTone(tone: Tone) {
       session.sendDTMF(tone)
     },
@@ -219,8 +225,8 @@ export async function setupSipClient(authDetails: WebRtcAuthenticationDetails): 
   const ua = await setupRegisteredUserAgent(authDetails)
 
   return {
-    async call(target: string, timeout): Promise<CallApi> {
-      return setupCall(ua, authDetails, target, timeout)
+    async call(target: string, timeout, extraHeaders): Promise<CallApi> {
+      return setupCall(ua, authDetails, target, timeout, extraHeaders ?? [])
     },
     disconnect() {
       ua.stop()

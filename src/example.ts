@@ -48,7 +48,7 @@ window.addEventListener('DOMContentLoaded', () => {
             audio.srcObject = callApi.media
             await audio.play()
             submitButton.innerHTML = 'Connected'
-            callApi.callCompleted.then(() => {
+            callApi.callCompletion.then(() => {
               currentCall = null
               submitButton.innerText = submitButtonText
               submitButton.disabled = false
