@@ -19,6 +19,6 @@
   },
   "scripts": {
     "watch": "npx webpack -w",
-    "ghpages-build": "npx webpack && rm .gitignore"
+    "ghpages-build": "npx webpack && rm -Rf node_modules .gitignore"
   }
 }
