@@ -18,6 +18,7 @@
     "jssip": "^3.10.0"
   },
   "scripts": {
-    "watch": "npx webpack -w"
+    "watch": "npx webpack -w",
+    "build": "npx webpack"
   }
 }
