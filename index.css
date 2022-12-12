@@ -3,3 +3,13 @@ html, body {
     padding: 0;
     font-family: Verdana, sans-serif;
 }
+
+div.dtmf-controls {
+    display: grid;
+    grid-template-columns: repeat(4, 2em);
+    grid-template-rows: repeat(4, 2em);
+}
+
+div.dtmf-controls > button {
+
+}

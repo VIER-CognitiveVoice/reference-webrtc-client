@@ -1,13 +1,16 @@
-import { UA, WebSocketInterface } from 'jssip';
+import {
+  UA,
+  WebSocketInterface,
+} from 'jssip'
 import {
   CallOptions,
   IncomingRTCSessionEvent,
   UAConfiguration,
-} from "jssip/lib/UA";
+} from "jssip/lib/UA"
 import {
   EndEvent,
   RTCSession,
-} from "jssip/lib/RTCSession";
+} from "jssip/lib/RTCSession"
 
 export interface WebRtcAuthenticationDetails {
   username: string
@@ -25,7 +28,7 @@ export async function fetchWebRtcAuthDetails(environment: string, resellerToken:
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-    }
+    },
   }
 
   const response = await fetch(`${environment}/v1/call/webrtc/authenticate`, request)
@@ -40,15 +43,35 @@ export type HeaderList = Array<[string, string]>
 
 export interface TelephonyApi {
   call(target: string, timeout: number, extraHeaders?: HeaderList): Promise<CallApi>
+
   disconnect(): void
 }
 
-export type Tone = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '*' | '#' | 'A' | 'B' | 'C' | 'D'
+export enum Tone {
+  ZERO = '0',
+  ONE = '1',
+  TWO = '2',
+  THREE = '3',
+  FOUR = '4',
+  FIVE = '5',
+  SIX = '6',
+  SEVEN = '7',
+  EIGHT = '8',
+  NINE = '9',
+  STAR = '*',
+  POUND = '#',
+  A = 'A',
+  B = 'B',
+  C = 'C',
+  D = 'D',
+}
 
 export interface CallApi {
   readonly media: MediaStream
   readonly callCompletion: Promise<void>
+
   sendTone(tone: Tone): void
+
   drop(): void
 }
 
@@ -95,7 +118,7 @@ async function setupRegisteredUserAgent(authDetails: WebRtcAuthenticationDetails
       rejectUserAgent(e)
     })
 
-    ua.start();
+    ua.start()
 
     signal.addEventListener('abort', (e) => {
       rejectUserAgent(e)
@@ -136,7 +159,7 @@ function setupSessionAndMedia(
       iceServers: [
         { urls: authDetails.stunUris },
         { urls: authDetails.turnUris, username: authDetails.username, credential: authDetails.password },
-      ]
+      ],
     },
   }
 
@@ -149,7 +172,6 @@ function setupSessionAndMedia(
       session.on('icecandidate', (e) => {
         e.ready()
       })
-
 
       session.once('confirmed', function (e) {
         if (resolved) {
@@ -166,7 +188,7 @@ function setupSessionAndMedia(
         resolve([session, mediaStream])
       })
 
-      session.once('failed', (e: EndEvent ) => {
+      session.once('failed', (e: EndEvent) => {
         if (resolved) {
           return
         }
@@ -183,12 +205,12 @@ async function setupCall(
   target: string,
   timeout: number,
   extraHeaders: HeaderList,
-  ): Promise<CallApi> {
+): Promise<CallApi> {
   const abort = new AbortController()
   const timeoutId = window.setTimeout(() => {
     abort.abort()
     userAgent.terminateSessions()
-  }, timeout);
+  }, timeout)
 
   function clearConnectionTimeout() {
     if (timeoutId) {
