@@ -38,7 +38,7 @@ window.addEventListener('DOMContentLoaded', () => {
     submitButton.disabled = true
     let currentCall: CallApi | null = null
     fetchWebRtcAuthDetails(environment, resellerToken)
-      .then(setupSipClient)
+      .then(details => setupSipClient(details, 10000))
       .then(async (sipApi) => {
         sipApi.call(destination, 45000).then(
           async (callApi) => {

@@ -52,7 +52,7 @@ export interface CallApi {
   drop(): void
 }
 
-async function setupRegisteredUserAgent(authDetails: WebRtcAuthenticationDetails): Promise<UA> {
+async function setupRegisteredUserAgent(authDetails: WebRtcAuthenticationDetails, signal: AbortSignal): Promise<UA> {
   const configuration: UAConfiguration = {
     sockets: authDetails.websocketUris.map(uri => new WebSocketInterface(uri.toString())),
     uri: authDetails.sipAddress,
@@ -62,6 +62,14 @@ async function setupRegisteredUserAgent(authDetails: WebRtcAuthenticationDetails
   return new Promise<UA>((resolve, reject) => {
     const ua = new UA(configuration)
     let resolved = false
+
+    function rejectUserAgent(reason: any) {
+      if (!resolved) {
+        ua.stop()
+        resolved = true
+        reject(reason)
+      }
+    }
 
     ua.on('connecting', (e) => {
       console.log('UA connecting', e)
@@ -79,21 +87,19 @@ async function setupRegisteredUserAgent(authDetails: WebRtcAuthenticationDetails
 
     ua.on('disconnected', (e) => {
       console.log('UA disconnected', e)
-      if (!resolved) {
-        resolved = true
-        reject(e)
-      }
+      rejectUserAgent(e)
     })
 
     ua.on('unregistered', (e) => {
       console.log('UA unregistered', e)
-      if (!resolved) {
-        resolved = true
-        reject(e)
-      }
+      rejectUserAgent(e)
     })
 
     ua.start();
+
+    signal.addEventListener('abort', (e) => {
+      rejectUserAgent(e)
+    }, { once: true })
   })
 }
 
@@ -221,8 +227,13 @@ async function setupCall(
   }
 }
 
-export async function setupSipClient(authDetails: WebRtcAuthenticationDetails): Promise<TelephonyApi> {
-  const ua = await setupRegisteredUserAgent(authDetails)
+export async function setupSipClient(authDetails: WebRtcAuthenticationDetails, timeout: number): Promise<TelephonyApi> {
+  const abortController = new AbortController()
+  const timeoutId = setTimeout(() => {
+    abortController.abort()
+  }, timeout)
+  const ua = await setupRegisteredUserAgent(authDetails, abortController.signal)
+  clearTimeout(timeoutId)
 
   return {
     async call(target: string, timeout, extraHeaders): Promise<CallApi> {
