@@ -1,6 +1,6 @@
 {
   "name": "@vier-cognitivevoice/reference-webrtc-client",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Cognitive Voice Gateway Reference WebRTC Client",
   "repository": "https://github.com/VIER-CognitiveVoice/reference-webrtc-client",
   "main": "client.js",
