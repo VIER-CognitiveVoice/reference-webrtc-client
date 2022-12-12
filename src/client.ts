@@ -18,10 +18,10 @@ export interface WebRtcAuthenticationDetails {
   turnUris: Array<string>
 }
 
-export async function fetchWebRtcAuthDetails(environment: string, resellerToken: string, projectToken: string): Promise<WebRtcAuthenticationDetails> {
+export async function fetchWebRtcAuthDetails(environment: string, resellerToken: string): Promise<WebRtcAuthenticationDetails> {
   let request: RequestInit = {
     method: 'POST',
-    body: JSON.stringify({ resellerToken, projectToken }),
+    body: JSON.stringify({ resellerToken }),
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',

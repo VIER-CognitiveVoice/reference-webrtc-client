@@ -28,17 +28,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const environment = localStorage.getItem('form.environment')
     const resellerToken = localStorage.getItem('form.reseller-token')
-    const projectToken = localStorage.getItem('form.project-token')
     const destination = localStorage.getItem('form.destination')
 
-    if (!environment || !resellerToken || !projectToken || !destination) {
+    if (!environment || !resellerToken || !destination) {
       return
     }
 
     submitButton.innerText = 'Connecting...'
     submitButton.disabled = true
     let currentCall: CallApi | null = null
-    fetchWebRtcAuthDetails(environment, resellerToken, projectToken)
+    fetchWebRtcAuthDetails(environment, resellerToken)
       .then(setupSipClient)
       .then(async (sipApi) => {
         sipApi.call(destination, 45000).then(
