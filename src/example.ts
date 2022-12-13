@@ -51,7 +51,7 @@ window.addEventListener('DOMContentLoaded', () => {
             audio.srcObject = callApi.media
             await audio.play()
             submitButton.innerHTML = 'Connected'
-            const controls = generateCallControls(callApi)
+            const controls = generateCallControls(callApi, 0.3)
             document.body.appendChild(controls)
             callApi.callCompletion.then(() => {
               document.body.removeChild(controls)
