@@ -117,7 +117,9 @@ function enableMediaStreamAudioInChrome(stream: MediaStream) {
   // yes, this object is indeed created, modified and discarded.
   // see: https://stackoverflow.com/questions/41784137/webrtc-doesnt-work-with-audiocontext
   // and: https://stackoverflow.com/questions/53325793/no-audio-from-webrct-stream-on-chrome-without-audio-tag
-  new Audio().srcObject = stream
+  const audio = new Audio()
+  audio.volume = 0
+  audio.srcObject = stream
 }
 
 export function generateCallControls(callApi: CallApi, options?: CallControlOptions): HTMLDivElement {
@@ -130,13 +132,13 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
   const outputNode: AudioNode = options?.audio?.outputNode ?? audioContext.destination
   const masterGain = outputNode.context.createGain()
   masterGain.gain.value = options?.volume?.masterVolume ?? 1
-  //masterGain.connect(outputNode)
+  masterGain.connect(outputNode)
   const callGain = outputNode.context.createGain()
   callGain.gain.value = options?.volume?.callVolume ?? 1
   callGain.connect(masterGain)
   enableMediaStreamAudioInChrome(callApi.media)
   const callSource = audioContext.createMediaStreamSource(callApi.media)
-  callSource.connect(outputNode)
+  callSource.connect(masterGain)
 
   const dtmfVolume = options?.volume?.dtmfVolume
   const playTone = dtmfVolume ? dtmfPlayer(masterGain, 0, dtmfVolume) : () => {}
