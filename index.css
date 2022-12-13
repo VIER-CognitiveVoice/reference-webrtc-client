@@ -9,6 +9,15 @@ div.dtmf-controls {
     grid-template-columns: repeat(4, 2em);
     grid-template-rows: repeat(4, 2em);
 }
+/*
+div.dtmf-controls button.letter {
+    display: none;
+}
+
+div.dtmf-controls  {
+    grid-template-columns: repeat(3, 2em);
+    grid-template-rows: repeat(3, 2em);
+}*/
 
 div.dtmf-controls > button {
 

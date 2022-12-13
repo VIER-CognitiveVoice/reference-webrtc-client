@@ -1,5 +1,7 @@
 import {
   CallApi,
+  fetchWebRtcAuthDetails,
+  setupSipClient,
   Tone,
 } from "./client"
 
@@ -13,18 +15,21 @@ function generateDtmfControls(onDtmf: (tone: Tone) => void): HTMLDivElement {
   const container = document.createElement('div')
   container.classList.add('dtmf-controls')
 
-  const tones = [
-    Tone.ONE, Tone.TWO, Tone.THREE, Tone.A,
-    Tone.FOUR, Tone.FIVE, Tone.SIX, Tone.B,
-    Tone.SEVEN, Tone.EIGHT, Tone.NINE, Tone.C,
-    Tone.STAR, Tone.ZERO, Tone.POUND, Tone.D,
+  type ToneKind = 'number' | 'control' | 'letter'
+
+  const tones: Array<[Tone, ToneKind]> = [
+    [Tone.ONE, 'number'], [Tone.TWO, 'number'], [Tone.THREE, 'number'], [Tone.A, 'letter'],
+    [Tone.FOUR, 'number'], [Tone.FIVE, 'number'], [Tone.SIX, 'number'], [Tone.B, 'letter'],
+    [Tone.SEVEN, 'number'], [Tone.EIGHT, 'number'], [Tone.NINE, 'number'], [Tone.C, 'letter'],
+    [Tone.STAR, 'control'], [Tone.ZERO, 'number'], [Tone.POUND, 'control'], [Tone.D, 'letter'],
   ]
-  for (let value of tones) {
+  for (const [tone, kind] of tones) {
     const button = createButton()
-    button.innerText = value
-    button.dataset.dtmf = value
+    button.innerText = tone
+    button.dataset.dtmf = tone
+    button.classList.add(kind)
     button.addEventListener('click', () => {
-      onDtmf(value)
+      onDtmf(tone)
     })
     container.appendChild(button)
   }
@@ -32,19 +37,14 @@ function generateDtmfControls(onDtmf: (tone: Tone) => void): HTMLDivElement {
   return container
 }
 
-function dtmfPlayer(volume: number): (tone: Tone) => void {
-
-  const audioContext = new AudioContext({
-    latencyHint: "interactive",
-  })
-
-  const gain = audioContext.createGain()
+function dtmfPlayer(outputNode: AudioNode, inputIndex: number, volume: number): (tone: Tone) => void {
+  const gain = outputNode.context.createGain()
   gain.gain.value = 0
-  gain.connect(audioContext.destination)
-  const oscillatorVertical = audioContext.createOscillator()
+  gain.connect(outputNode, 0, inputIndex)
+  const oscillatorVertical = outputNode.context.createOscillator()
   oscillatorVertical.connect(gain)
   oscillatorVertical.start()
-  const oscillatorHorizontal = audioContext.createOscillator()
+  const oscillatorHorizontal = outputNode.context.createOscillator()
   oscillatorHorizontal.connect(gain)
   oscillatorHorizontal.start()
 
@@ -89,11 +89,57 @@ function dtmfPlayer(volume: number): (tone: Tone) => void {
   }
 }
 
-export function generateCallControls(callApi: CallApi, dtmfVolume: number = 0): HTMLDivElement {
+export interface VolumeOptions {
+  masterVolume?: number
+  callVolume?: number
+  dtmfVolume?: number
+}
+
+export const DEFAULT_TIMEOUT = 10000
+
+export interface TimeoutOptions {
+  register?: number
+  invite?: number
+}
+
+export interface AudioOptions {
+  context?: AudioContext
+  outputNode?: AudioNode
+}
+
+export interface CallControlOptions {
+  audio?: AudioOptions
+  volume?: VolumeOptions
+  timeout?: TimeoutOptions
+}
+
+function enableMediaStreamAudioInChrome(stream: MediaStream) {
+  // yes, this object is indeed created, modified and discarded.
+  // see: https://stackoverflow.com/questions/41784137/webrtc-doesnt-work-with-audiocontext
+  // and: https://stackoverflow.com/questions/53325793/no-audio-from-webrct-stream-on-chrome-without-audio-tag
+  new Audio().srcObject = stream
+}
+
+export function generateCallControls(callApi: CallApi, options?: CallControlOptions): HTMLDivElement {
   const container = document.createElement('div')
   container.classList.add('call-controls')
 
-  const playTone = dtmfVolume > 0 ? dtmfPlayer(dtmfVolume) : () => {}
+  const audioContext = options?.audio?.context ?? new AudioContext({
+    latencyHint: 'interactive',
+  })
+  const outputNode: AudioNode = options?.audio?.outputNode ?? audioContext.destination
+  const masterGain = outputNode.context.createGain()
+  masterGain.gain.value = options?.volume?.masterVolume ?? 1
+  //masterGain.connect(outputNode)
+  const callGain = outputNode.context.createGain()
+  callGain.gain.value = options?.volume?.callVolume ?? 1
+  callGain.connect(masterGain)
+  enableMediaStreamAudioInChrome(callApi.media)
+  const callSource = audioContext.createMediaStreamSource(callApi.media)
+  callSource.connect(outputNode)
+
+  const dtmfVolume = options?.volume?.dtmfVolume
+  const playTone = dtmfVolume ? dtmfPlayer(masterGain, 0, dtmfVolume) : () => {}
 
   const dtmfContainer = generateDtmfControls(tone => {
     callApi.sendTone(tone)
@@ -127,4 +173,57 @@ export function generateCallControls(callApi: CallApi, dtmfVolume: number = 0): 
   container.appendChild(callControlsContainer)
 
   return container
+}
+
+export function triggerControls(alignToElement: Element, environment: string, resellerToken: string, destination: string, options?: CallControlOptions): Promise<CallApi> {
+  return new Promise((resolve, reject) => {
+    fetchWebRtcAuthDetails(environment, resellerToken)
+      .then(details => setupSipClient(details, options?.timeout?.register ?? DEFAULT_TIMEOUT))
+      .then(telephony => {
+        return telephony.call(destination, options?.timeout?.invite ?? DEFAULT_TIMEOUT)
+          .then(call => {
+            const controls = generateCallControls(call, options)
+            document.body.appendChild(controls)
+            call.callCompletion.then(() => {
+              document.body.removeChild(controls)
+              telephony.disconnect()
+            })
+            resolve(call)
+          })
+          .catch(e => {
+            telephony.disconnect()
+            reject(e)
+          })
+      })
+    })
+}
+
+export function mountControlsTo(triggerElement: Element | string, options?: CallControlOptions): Promise<CallApi> {
+  let element: Element
+  if (typeof triggerElement === 'string') {
+    const selectorResult = document.querySelector<Element>(triggerElement)
+    if (!selectorResult) {
+      throw new Error(`Failed to fine element using selector ${triggerElement}`)
+    }
+    element = selectorResult
+  } else {
+    element = triggerElement
+  }
+  return new Promise<CallApi>((resolve, reject) => {
+    element.addEventListener('click', (e: Event) => {
+      e.preventDefault()
+      const environment = element.getAttribute('data-environment') || 'https://cognitivevoice.io'
+      const resellerToken = element.getAttribute('data-resellerToken')
+      if (!resellerToken) {
+        reject(new Error('No reseller token configured!'))
+        return
+      }
+      const destination = element.getAttribute('data-destination')
+      if (!destination) {
+        reject(new Error('No destination configured!'))
+        return
+      }
+      return triggerControls(element, environment, resellerToken, destination, options)
+    }, { once: true })
+  })
 }

@@ -1,22 +1,32 @@
 import {
   CallApi,
-  fetchWebRtcAuthDetails,
-  setupSipClient,
 } from "./client"
-import { generateCallControls } from "./controls"
+import {
+  CallControlOptions,
+  triggerControls,
+} from "./controls"
 
 window.addEventListener('DOMContentLoaded', () => {
   const query = new URLSearchParams(location.search)
-  const audio = document.querySelector('audio')
   const form = document.querySelector<HTMLFormElement>('form')
-  if (!audio || !form) {
+  if (!form) {
+    console.error('Form not found!')
     return
   }
   const submitButton = form.querySelector<HTMLButtonElement>('button[type=submit]')
   if (!submitButton) {
+    console.error('Submit button not found in form!')
     return
   }
   const submitButtonText = submitButton.innerText
+
+  let currentCall: CallApi | null = null
+
+  window.addEventListener('beforeunload', () => {
+    if (currentCall) {
+      currentCall.drop()
+    }
+  })
 
   form.querySelectorAll<HTMLInputElement>('input[name]').forEach(element => {
     const key = `form.${element.name}`
@@ -45,37 +55,26 @@ window.addEventListener('DOMContentLoaded', () => {
 
     submitButton.innerText = 'Connecting...'
     submitButton.disabled = true
-    let currentCall: CallApi | null = null
-    fetchWebRtcAuthDetails(environment, resellerToken)
-      .then(details => setupSipClient(details, 10000))
-      .then(async (sipApi) => {
-        sipApi.call(destination, 45000).then(
-          async (callApi) => {
-            currentCall = callApi
-            console.log("Call was accepted!", callApi)
-            audio.srcObject = callApi.media
-            await audio.play()
-            submitButton.innerHTML = 'Connected'
-            const controls = generateCallControls(callApi, 0.3)
-            document.body.appendChild(controls)
-            callApi.callCompletion.then(() => {
-              document.body.removeChild(controls)
-              currentCall = null
-              submitButton.innerText = submitButtonText
-              submitButton.disabled = false
-            })
-          }, (reason) => {
-            submitButton.innerText = submitButtonText
-            submitButton.disabled = false
-            audio.srcObject = null
-            console.log("Call failed", reason)
-            sipApi.disconnect()
-          })
+
+    const options: CallControlOptions = {
+      volume: {
+        dtmfVolume: 0.4,
+      },
+    }
+    triggerControls(submitButton, environment, resellerToken, destination, options)
+      .then(async (callApi) => {
+        currentCall = callApi
+        console.log("Call was accepted!", callApi)
+        submitButton.innerHTML = 'Connected'
+        callApi.callCompletion.then(() => {
+          currentCall = null
+          submitButton.innerText = submitButtonText
+          submitButton.disabled = false
+        })
+      }, (reason) => {
+        submitButton.innerText = submitButtonText
+        submitButton.disabled = false
+        console.log("Call failed", reason)
       })
-    window.addEventListener('beforeunload', () => {
-      if (currentCall) {
-        currentCall.drop()
-      }
-    })
   })
 })
