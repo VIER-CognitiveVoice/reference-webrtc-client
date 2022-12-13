@@ -6,6 +6,7 @@ import {
 import { generateCallControls } from "./controls"
 
 window.addEventListener('DOMContentLoaded', () => {
+  const query = new URLSearchParams(location.search)
   const audio = document.querySelector('audio')
   const form = document.querySelector<HTMLFormElement>('form')
   if (!audio || !form) {
@@ -19,9 +20,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
   form.querySelectorAll<HTMLInputElement>('input[name]').forEach(element => {
     const key = `form.${element.name}`
+    const queryValue = query.get(element.name)
     const existingValue = localStorage.getItem(key)
     if (existingValue) {
       element.value = existingValue
+    } else if (queryValue) {
+      element.value = queryValue
+      localStorage.setItem(key, queryValue)
     }
     element.addEventListener('change', () => {
       localStorage.setItem(key, element.value)
