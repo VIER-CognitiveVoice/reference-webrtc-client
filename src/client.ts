@@ -6,11 +6,11 @@ import {
   CallOptions,
   IncomingRTCSessionEvent,
   UAConfiguration,
-} from "jssip/lib/UA"
+} from 'jssip/lib/UA'
 import {
   EndEvent,
   RTCSession,
-} from "jssip/lib/RTCSession"
+} from 'jssip/lib/RTCSession'
 
 export interface WebRtcAuthenticationDetails {
   username: string
@@ -33,7 +33,7 @@ export async function fetchWebRtcAuthDetails(environment: string, resellerToken:
 
   const response = await fetch(`${environment}/v1/call/webrtc/authenticate`, request)
   if (!response.ok) {
-    throw new Error("Failed to fetch authentication details!")
+    throw new Error('Failed to fetch authentication details!')
   }
 
   return await response.json() as WebRtcAuthenticationDetails
@@ -130,7 +130,7 @@ function awaitRtcSession(userAgent: UA, cancel: AbortSignal): Promise<RTCSession
   return new Promise((resolve, reject) => {
     cancel.addEventListener('cancel', reject, { once: true })
     userAgent.once('newRTCSession', (e: IncomingRTCSessionEvent) => {
-      console.log("RTCSession received", e)
+      console.log('RTCSession received', e)
       cancel.removeEventListener('cancel', reject)
       if (cancel.aborted) {
         reject(cancel.reason)
@@ -183,7 +183,7 @@ function setupSessionAndMedia(
             mediaStream.addTrack(receiver.track)
           }
         }
-        console.log("Session confirmed!", e)
+        console.log('Session confirmed!', e)
 
         resolve([session, mediaStream])
       })
@@ -192,7 +192,7 @@ function setupSessionAndMedia(
         if (resolved) {
           return
         }
-        console.log("Session failed!", e)
+        console.log('Session failed!', e)
         reject(e)
       })
     })
@@ -233,7 +233,7 @@ async function setupCall(
   clearConnectionTimeout()
 
   session.once('ended', (e: EndEvent) => {
-    console.log("session ended!", e)
+    console.log('session ended!', e)
     completeCall()
   })
 

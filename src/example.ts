@@ -1,10 +1,10 @@
 import {
   CallApi,
-} from "./client"
+} from './client'
 import {
   CallControlOptions,
   triggerControls,
-} from "./controls"
+} from './controls'
 
 window.addEventListener('DOMContentLoaded', () => {
   const query = new URLSearchParams(location.search)
@@ -60,11 +60,14 @@ window.addEventListener('DOMContentLoaded', () => {
       volume: {
         dtmfVolume: 0.4,
       },
+      ui: {
+        keypad: 'standard',
+      },
     }
     triggerControls(submitButton, environment, resellerToken, destination, options)
       .then(async (callApi) => {
         currentCall = callApi
-        console.log("Call was accepted!", callApi)
+        console.log('Call was accepted!', callApi)
         submitButton.innerHTML = 'Connected'
         callApi.callCompletion.then(() => {
           currentCall = null
@@ -74,7 +77,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }, (reason) => {
         submitButton.innerText = submitButtonText
         submitButton.disabled = false
-        console.log("Call failed", reason)
+        console.log('Call failed', reason)
       })
   })
 })

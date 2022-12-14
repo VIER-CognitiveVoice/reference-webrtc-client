@@ -3,7 +3,7 @@ import {
   fetchWebRtcAuthDetails,
   setupSipClient,
   Tone,
-} from "./client"
+} from './client'
 
 function createButton(): HTMLButtonElement {
   const button = document.createElement('button')
@@ -11,18 +11,30 @@ function createButton(): HTMLButtonElement {
   return button
 }
 
-function generateDtmfControls(onDtmf: (tone: Tone) => void): HTMLDivElement {
+function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (tone: Tone) => void): HTMLDivElement {
+  const keypad = options?.ui?.keypad ?? DEFAULT_KEYPAD
   const container = document.createElement('div')
   container.classList.add('dtmf-controls')
+  container.classList.add(keypad)
 
   type ToneKind = 'number' | 'control' | 'letter'
 
-  const tones: Array<[Tone, ToneKind]> = [
-    [Tone.ONE, 'number'], [Tone.TWO, 'number'], [Tone.THREE, 'number'], [Tone.A, 'letter'],
-    [Tone.FOUR, 'number'], [Tone.FIVE, 'number'], [Tone.SIX, 'number'], [Tone.B, 'letter'],
-    [Tone.SEVEN, 'number'], [Tone.EIGHT, 'number'], [Tone.NINE, 'number'], [Tone.C, 'letter'],
-    [Tone.STAR, 'control'], [Tone.ZERO, 'number'], [Tone.POUND, 'control'], [Tone.D, 'letter'],
-  ]
+  let tones: Array<[Tone, ToneKind]>
+  if (keypad === 'full') {
+    tones = [
+      [Tone.ONE, 'number'], [Tone.TWO, 'number'], [Tone.THREE, 'number'], [Tone.A, 'letter'],
+      [Tone.FOUR, 'number'], [Tone.FIVE, 'number'], [Tone.SIX, 'number'], [Tone.B, 'letter'],
+      [Tone.SEVEN, 'number'], [Tone.EIGHT, 'number'], [Tone.NINE, 'number'], [Tone.C, 'letter'],
+      [Tone.STAR, 'control'], [Tone.ZERO, 'number'], [Tone.POUND, 'control'], [Tone.D, 'letter'],
+    ]
+  } else {
+    tones = [
+      [Tone.ONE, 'number'], [Tone.TWO, 'number'], [Tone.THREE, 'number'],
+      [Tone.FOUR, 'number'], [Tone.FIVE, 'number'], [Tone.SIX, 'number'],
+      [Tone.SEVEN, 'number'], [Tone.EIGHT, 'number'], [Tone.NINE, 'number'],
+      [Tone.STAR, 'control'], [Tone.ZERO, 'number'], [Tone.POUND, 'control'],
+    ]
+  }
   for (const [tone, kind] of tones) {
     const button = createButton()
     button.innerText = tone
@@ -76,7 +88,7 @@ function dtmfPlayer(outputNode: AudioNode, inputIndex: number, volume: number): 
   return function playTone(tone: Tone) {
     if (tonePlaybackTimeout !== null) {
       clearTimeout(tonePlaybackTimeout)
-      gain.gain.value = 0;
+      gain.gain.value = 0
     }
     const [vertical, horizontal] = toneToFrequency[tone]
     oscillatorVertical.frequency.value = vertical
@@ -107,10 +119,17 @@ export interface AudioOptions {
   outputNode?: AudioNode
 }
 
+export const DEFAULT_KEYPAD: 'full' = 'full'
+
+export interface UiOptions {
+  keypad: 'standard' | 'full'
+}
+
 export interface CallControlOptions {
   audio?: AudioOptions
   volume?: VolumeOptions
   timeout?: TimeoutOptions
+  ui?: UiOptions
 }
 
 function enableMediaStreamAudioInChrome(stream: MediaStream) {
@@ -141,9 +160,10 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
   callSource.connect(masterGain)
 
   const dtmfVolume = options?.volume?.dtmfVolume
-  const playTone = dtmfVolume ? dtmfPlayer(masterGain, 0, dtmfVolume) : () => {}
+  const playTone = dtmfVolume ? dtmfPlayer(masterGain, 0, dtmfVolume) : () => {
+  }
 
-  const dtmfContainer = generateDtmfControls(tone => {
+  const dtmfContainer = generateDtmfControls(options, tone => {
     callApi.sendTone(tone)
     playTone(tone)
   })
@@ -197,7 +217,7 @@ export function triggerControls(alignToElement: Element, environment: string, re
             reject(e)
           })
       })
-    })
+  })
 }
 
 export function mountControlsTo(triggerElement: Element | string, options?: CallControlOptions): Promise<CallApi> {
