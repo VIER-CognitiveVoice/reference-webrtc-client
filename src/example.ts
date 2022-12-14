@@ -61,7 +61,7 @@ window.addEventListener('DOMContentLoaded', () => {
         dtmfVolume: 0.4,
       },
       ui: {
-        keypad: 'standard',
+        keypad: 'full',
       },
     }
     triggerControls(submitButton, environment, resellerToken, destination, options)

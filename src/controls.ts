@@ -17,22 +17,22 @@ function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (
   container.classList.add('dtmf-controls')
   container.classList.add(keypad)
 
-  type ToneKind = 'number' | 'control' | 'letter'
+  type ToneKind = 'digit' | 'control' | 'letter'
 
   let tones: Array<[Tone, ToneKind]>
   if (keypad === 'full') {
     tones = [
-      [Tone.ONE, 'number'], [Tone.TWO, 'number'], [Tone.THREE, 'number'], [Tone.A, 'letter'],
-      [Tone.FOUR, 'number'], [Tone.FIVE, 'number'], [Tone.SIX, 'number'], [Tone.B, 'letter'],
-      [Tone.SEVEN, 'number'], [Tone.EIGHT, 'number'], [Tone.NINE, 'number'], [Tone.C, 'letter'],
-      [Tone.STAR, 'control'], [Tone.ZERO, 'number'], [Tone.POUND, 'control'], [Tone.D, 'letter'],
+      [Tone.ONE, 'digit'], [Tone.TWO, 'digit'], [Tone.THREE, 'digit'], [Tone.A, 'letter'],
+      [Tone.FOUR, 'digit'], [Tone.FIVE, 'digit'], [Tone.SIX, 'digit'], [Tone.B, 'letter'],
+      [Tone.SEVEN, 'digit'], [Tone.EIGHT, 'digit'], [Tone.NINE, 'digit'], [Tone.C, 'letter'],
+      [Tone.STAR, 'control'], [Tone.ZERO, 'digit'], [Tone.POUND, 'control'], [Tone.D, 'letter'],
     ]
   } else {
     tones = [
-      [Tone.ONE, 'number'], [Tone.TWO, 'number'], [Tone.THREE, 'number'],
-      [Tone.FOUR, 'number'], [Tone.FIVE, 'number'], [Tone.SIX, 'number'],
-      [Tone.SEVEN, 'number'], [Tone.EIGHT, 'number'], [Tone.NINE, 'number'],
-      [Tone.STAR, 'control'], [Tone.ZERO, 'number'], [Tone.POUND, 'control'],
+      [Tone.ONE, 'digit'], [Tone.TWO, 'digit'], [Tone.THREE, 'digit'],
+      [Tone.FOUR, 'digit'], [Tone.FIVE, 'digit'], [Tone.SIX, 'digit'],
+      [Tone.SEVEN, 'digit'], [Tone.EIGHT, 'digit'], [Tone.NINE, 'digit'],
+      [Tone.STAR, 'control'], [Tone.ZERO, 'digit'], [Tone.POUND, 'control'],
     ]
   }
   for (const [tone, kind] of tones) {
