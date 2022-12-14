@@ -11,7 +11,9 @@ function createButton(): HTMLButtonElement {
   return button
 }
 
-function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (tone: Tone) => void): HTMLDivElement {
+type DtmfEvent = 'start' | 'complete' | 'cancel'
+
+function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (tone: Tone, event: DtmfEvent) => void): HTMLDivElement {
   const keypad = options?.ui?.keypad ?? DEFAULT_KEYPAD
   const container = document.createElement('div')
   container.classList.add('dtmf-controls')
@@ -40,8 +42,26 @@ function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (
     button.innerText = tone
     button.dataset.dtmf = tone
     button.classList.add(kind)
-    button.addEventListener('click', () => {
-      onDtmf(tone)
+    let hovering: boolean = false
+    button.addEventListener('mousedown', () => {
+      hovering = true
+      onDtmf(tone, 'start')
+      const upHandler = () => {
+        onDtmf(tone, hovering ? 'complete' : 'cancel')
+        window.removeEventListener('blur', blurHandler)
+      }
+      const blurHandler = () => {
+        onDtmf(tone, 'cancel')
+        window.removeEventListener('blur', upHandler)
+      }
+      window.addEventListener('mouseup', upHandler, { once: true })
+      window.addEventListener('blur', blurHandler, { once: true })
+    })
+    button.addEventListener('mouseover', () => {
+      hovering = true
+    })
+    button.addEventListener('mouseleave', () => {
+      hovering = false
     })
     container.appendChild(button)
   }
@@ -49,7 +69,7 @@ function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (
   return container
 }
 
-function dtmfPlayer(outputNode: AudioNode, inputIndex: number, volume: number): (tone: Tone) => void {
+function dtmfPlayer(outputNode: AudioNode, inputIndex: number, volume: number): (tone: Tone | undefined) => void {
   const gain = outputNode.context.createGain()
   gain.gain.value = 0
   gain.connect(outputNode, 0, inputIndex)
@@ -83,21 +103,21 @@ function dtmfPlayer(outputNode: AudioNode, inputIndex: number, volume: number): 
     [Tone.D]: [verticalFrequencies[3], horizontalFrequencies[3]],
   }
 
-  let tonePlaybackTimeout: number | null = null
+  window.addEventListener('blur', () => {
+    gain.gain.value = 0
+  })
 
-  return function playTone(tone: Tone) {
-    if (tonePlaybackTimeout !== null) {
-      clearTimeout(tonePlaybackTimeout)
+  return function playTone(tone: Tone | undefined) {
+    if (tone === undefined) {
       gain.gain.value = 0
+      return
     }
+
     const [vertical, horizontal] = toneToFrequency[tone]
     oscillatorVertical.frequency.value = vertical
     oscillatorHorizontal.frequency.value = horizontal
 
     gain.gain.value = volume
-    tonePlaybackTimeout = window.setTimeout(() => {
-      gain.gain.value = 0
-    }, 200)
   }
 }
 
@@ -163,9 +183,11 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
   const playTone = dtmfVolume ? dtmfPlayer(masterGain, 0, dtmfVolume) : () => {
   }
 
-  const dtmfContainer = generateDtmfControls(options, tone => {
-    callApi.sendTone(tone)
-    playTone(tone)
+  const dtmfContainer = generateDtmfControls(options, (tone, event) => {
+    if (event === 'complete') {
+      callApi.sendTone(tone)
+    }
+    playTone(event === 'start' ? tone : undefined)
   })
   container.appendChild(dtmfContainer)
 
