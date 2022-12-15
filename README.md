@@ -8,3 +8,5 @@ Try it
 ------
 
 The demo page is deployed at https://vier-cognitivevoice.github.io/reference-webrtc-client
+
+The NPM library is available at: https://www.npmjs.com/package/@vier-cognitivevoice/reference-webrtc-client
