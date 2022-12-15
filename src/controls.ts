@@ -211,6 +211,7 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
       muteButton.innerText = 'Mute'
       delete muteButton.dataset.muted
     }
+    callApi.muteMicrophone(!isMuted)
   })
   callControlsContainer.appendChild(muteButton)
 
