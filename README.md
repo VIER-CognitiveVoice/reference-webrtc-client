@@ -1,5 +1,8 @@
-Reference WebRTC Client
-=======================
+Reference WebRTC Client for VIER Cognitive Voice Gateway
+========================================================
+If a voicebot is built with VIER Cognitive Voice Gateway (CVG), it can be called via the public telephone network, via a SIP URI or via WebRTC directly from the browser.
+
+This project is aimed at developers as a reference implementation for a browser-based WebRTC client.
 
 Try it
 ------
