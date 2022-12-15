@@ -71,7 +71,7 @@ export interface CallApi {
   readonly callCompletion: Promise<void>
 
   sendTone(tone: Tone): void
-  muteMicrophone(mute: boolean): void
+  setMicrophoneMuted(mute: boolean): void
 
   drop(): void
 }
@@ -244,13 +244,15 @@ async function setupCall(
     sendTone(tone: Tone) {
       session.sendDTMF(tone)
     },
-    muteMicrophone(mute: boolean) {
+    setMicrophoneMuted(mute: boolean) {
       if (mute) {
-        if (!session.isMuted()) {
+        debugger
+        if (!session.isMuted().audio) {
           session.mute()
         }
       } else {
-        if (session.isMuted()) {
+        debugger
+        if (session.isMuted().audio) {
           session.unmute()
         }
       }

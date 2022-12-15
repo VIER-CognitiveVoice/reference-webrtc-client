@@ -203,15 +203,15 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
   const muteButton = createButton()
   muteButton.innerText = 'Mute'
   muteButton.addEventListener('click', () => {
-    const isMuted = !!muteButton.dataset.muted
-    if (isMuted) {
-      muteButton.innerText = 'Unmute'
-      muteButton.dataset.muted = 'yes'
-    } else {
+    const isCurrentlyMuted = !!muteButton.dataset.muted
+    if (isCurrentlyMuted) {
       muteButton.innerText = 'Mute'
       delete muteButton.dataset.muted
+    } else {
+      muteButton.innerText = 'Unmute'
+      muteButton.dataset.muted = 'yes'
     }
-    callApi.muteMicrophone(!isMuted)
+    callApi.setMicrophoneMuted(!isCurrentlyMuted)
   })
   callControlsContainer.appendChild(muteButton)
 
