@@ -246,12 +246,10 @@ async function setupCall(
     },
     setMicrophoneMuted(mute: boolean) {
       if (mute) {
-        debugger
         if (!session.isMuted().audio) {
           session.mute()
         }
       } else {
-        debugger
         if (session.isMuted().audio) {
           session.unmute()
         }

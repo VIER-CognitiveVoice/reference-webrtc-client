@@ -1,20 +1,25 @@
-div.dtmf-controls {
+div.call-controls {
+    width: fit-content;
+    overflow: hidden;
+    margin: 0.5em;
+}
+
+div.call-controls > div.dtmf-controls {
     display: grid;
     grid-gap: 0.3em;
-    margin: 0.5em;
     width: fit-content;
+    margin: 1em auto;
 }
-div.dtmf-controls.full  {
+div.call-controls > div.dtmf-controls.full  {
     grid-template-columns: repeat(4, 2em);
     grid-template-rows: repeat(4, 2em);
 }
-div.dtmf-controls.standard  {
+div.call-controls > div.dtmf-controls.standard  {
     grid-template-columns: repeat(3, 2em);
     grid-template-rows: repeat(4, 2em);
 }
 
-div.dtmf-controls > button {
-    color: rgb(215, 215, 215);
+div.call-controls > div.dtmf-controls > button {
     border-radius: 50%;
     border: 0;
     font-family: monospace;
@@ -22,37 +27,73 @@ div.dtmf-controls > button {
     vertical-align: super;
     transition: background-color 200ms, box-shadow 100ms;
     font-weight: bolder;
-    box-shadow: 0 0 3px 2px #000000;
 }
 
-div.dtmf-controls > button:hover {
-    box-shadow: 0 0 5px 3px #000000;
+div.call-controls button {
+    color: hsl(0, 0%, 84%);
 }
 
-div.dtmf-controls > button:active {
-    color: rgb(255, 255, 255);
+div.call-controls button:active {
+    color: hsl(0, 0%, 100%);
 }
 
-div.dtmf-controls > button.digit {
-    background-color: rgb(61, 61, 61);
+div.call-controls > div.dtmf-controls > button.digit {
+    background-color: hsl(0, 0%, 24%);
 }
 
-div.dtmf-controls > button.digit:hover {
-    background-color: rgb(100, 100, 100);
+div.call-controls > div.dtmf-controls > button.digit:hover {
+    background-color: hsl(0, 0%, 39%);
 }
 
-div.dtmf-controls > button.control {
-    background-color: rgb(31, 68, 0);
+div.call-controls > div.dtmf-controls > button.control {
+    background-color: hsl(93, 100%, 13%);
 }
 
-div.dtmf-controls > button.control:hover {
-    background-color: rgb(59, 128, 0);
+div.call-controls > div.dtmf-controls > button.control:hover {
+    background-color: hsl(93, 100%, 25%);
 }
 
-div.dtmf-controls > button.letter {
-    background-color: rgb(66, 0, 0);
+div.call-controls > div.dtmf-controls > button.letter {
+    background-color: hsl(0, 100%, 13%);
 }
 
-div.dtmf-controls > button.letter:hover {
-    background-color: rgb(124, 0, 0);
+div.call-controls > div.dtmf-controls > button.letter:hover {
+    background-color: hsl(0, 100%, 24%);
+}
+
+div.call-controls > div.call-actions {
+    display: flex;
+    column-gap: 0.5em;
+    justify-content: center;
+}
+
+div.call-controls > div.call-actions > button {
+    border-radius: 14px;
+    border: 0;
+    flex-grow: 0;
+    flex-shrink: 0;
+    padding: 6px 10px;
+    font-size: 16px;
+    line-height: 16px;
+}
+
+div.call-controls > div.call-actions > button.drop {
+    background-color: hsl(0, 100%, 30%);
+}
+div.call-controls > div.call-actions > button.drop:hover {
+    background-color: hsl(0, 100%, 40%);
+}
+
+div.call-controls > div.call-actions > button.mute-toggle.unmuted {
+    background-color: hsl(132, 100%, 15%);
+}
+div.call-controls > div.call-actions > button.mute-toggle.unmuted:hover {
+    background-color: hsl(132, 100%, 25%);
+}
+
+div.call-controls > div.call-actions > button.mute-toggle.muted {
+    background-color: hsl(0, 100%, 30%);
+}
+div.call-controls > div.call-actions > button.mute-toggle.muted:hover {
+    background-color: hsl(0, 100%, 40%);
 }

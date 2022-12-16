@@ -13,7 +13,8 @@ function createButton(): HTMLButtonElement {
 
 type DtmfEvent = 'start' | 'complete' | 'cancel'
 
-function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (tone: Tone, event: DtmfEvent) => void): HTMLDivElement {
+function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (tone: Tone, event: DtmfEvent) => void): [HTMLDivElement, CleanupFunction] {
+  const cleanupActions: Array<CleanupFunction> = []
   const keypad = options?.ui?.keypad ?? DEFAULT_KEYPAD
   const container = document.createElement('div')
   container.classList.add('dtmf-controls')
@@ -56,6 +57,10 @@ function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (
       }
       window.addEventListener('mouseup', upHandler, { once: true })
       window.addEventListener('blur', blurHandler, { once: true })
+      cleanupActions.push(() => {
+        window.removeEventListener('mouseup', upHandler)
+        window.removeEventListener('blur', blurHandler)
+      })
     })
     button.addEventListener('mouseover', () => {
       hovering = true
@@ -66,7 +71,7 @@ function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (
     container.appendChild(button)
   }
 
-  return container
+  return [container, () => cleanupActions.forEach(action => action())]
 }
 
 function dtmfPlayer(outputNode: AudioNode, inputIndex: number, volume: number): (tone: Tone | undefined) => void {
@@ -139,10 +144,15 @@ export interface AudioOptions {
   outputNode?: AudioNode
 }
 
-export const DEFAULT_KEYPAD: 'full' = 'full'
+export type KeypadMode = 'none' | 'standard' | 'full'
+export type DarkMode = 'yes' | 'no' | 'auto'
+
+export const DEFAULT_KEYPAD: KeypadMode = 'full'
+export const DEFAULT_DARK_MODE: DarkMode = 'auto'
 
 export interface UiOptions {
-  keypad: 'standard' | 'full'
+  keypad?: KeypadMode
+  dark?: DarkMode
 }
 
 export interface CallControlOptions {
@@ -161,9 +171,59 @@ function enableMediaStreamAudioInChrome(stream: MediaStream) {
   audio.srcObject = stream
 }
 
-export function generateCallControls(callApi: CallApi, options?: CallControlOptions): HTMLDivElement {
+function muteButtonSetState(button: HTMLButtonElement, muted: boolean) {
+  const MUTED = 'muted'
+  const UNMUTED = 'unmuted'
+  if (muted) {
+    if (!button.classList.replace(UNMUTED, MUTED)) {
+      button.classList.add(MUTED)
+    }
+    button.innerText = 'Unmute'
+  } else {
+    if (!button.classList.replace(MUTED, UNMUTED)) {
+      button.classList.add(UNMUTED)
+    }
+    button.innerText = 'Mute'
+  }
+}
+
+export type CleanupFunction = () => void
+
+export function generateCallControls(callApi: CallApi, options?: CallControlOptions): [HTMLDivElement, CleanupFunction] {
+
+  const cleanupActions: Array<CleanupFunction> = [];
+
   const container = document.createElement('div')
   container.classList.add('call-controls')
+
+  const DARK_MODE = 'dark-mode'
+  const LIGHT_MODE = 'light-mode'
+
+  switch (options?.ui?.dark ?? DEFAULT_DARK_MODE) {
+    case 'yes':
+      container.classList.add(DARK_MODE)
+      break;
+    case 'no':
+      container.classList.add(LIGHT_MODE)
+      break;
+    case 'auto':
+      const darkMedia = window.matchMedia('(prefers-color-scheme: dark)')
+      container.classList.add(darkMedia.matches ? DARK_MODE : LIGHT_MODE)
+      const mediaChangeListener = (e: MediaQueryListEvent) => {
+        if (e.matches) {
+          if (!container.classList.replace(LIGHT_MODE, DARK_MODE)) {
+            container.classList.add(DARK_MODE)
+          }
+        } else {
+          if (!container.classList.replace(DARK_MODE, LIGHT_MODE)) {
+            container.classList.add(LIGHT_MODE)
+          }
+        }
+      }
+      darkMedia.addEventListener('change', mediaChangeListener)
+      cleanupActions.push(() => darkMedia.removeEventListener('change', mediaChangeListener))
+      break;
+  }
 
   const audioContext = options?.audio?.context ?? new AudioContext({
     latencyHint: 'interactive',
@@ -183,41 +243,47 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
   const playTone = dtmfVolume ? dtmfPlayer(masterGain, 0, dtmfVolume) : () => {
   }
 
-  const dtmfContainer = generateDtmfControls(options, (tone, event) => {
-    if (event === 'complete') {
-      callApi.sendTone(tone)
-    }
-    playTone(event === 'start' ? tone : undefined)
-  })
-  container.appendChild(dtmfContainer)
+  if ((options?.ui?.keypad ?? DEFAULT_KEYPAD) !== 'none') {
+    const [dtmfContainer, dtmfCleanup] = generateDtmfControls(options, (tone, event) => {
+      if (event === 'complete') {
+        callApi.sendTone(tone)
+      }
+      playTone(event === 'start' ? tone : undefined)
+    })
+    container.appendChild(dtmfContainer)
+    cleanupActions.push(dtmfCleanup)
+  }
 
-  const callControlsContainer = document.createElement('div')
+  const callActionsContainer = document.createElement('div')
+  callActionsContainer.classList.add('call-actions')
 
   const dropButton = createButton()
+  dropButton.classList.add('drop')
   dropButton.innerText = 'Drop'
   dropButton.addEventListener('click', () => {
     callApi.drop()
   })
-  callControlsContainer.appendChild(dropButton)
+  callActionsContainer.appendChild(dropButton)
 
   const muteButton = createButton()
+  muteButton.classList.add('mute-toggle')
+  muteButtonSetState(muteButton, false)
   muteButton.innerText = 'Mute'
   muteButton.addEventListener('click', () => {
     const isCurrentlyMuted = !!muteButton.dataset.muted
     if (isCurrentlyMuted) {
-      muteButton.innerText = 'Mute'
       delete muteButton.dataset.muted
     } else {
-      muteButton.innerText = 'Unmute'
       muteButton.dataset.muted = 'yes'
     }
+    muteButtonSetState(muteButton, !isCurrentlyMuted)
     callApi.setMicrophoneMuted(!isCurrentlyMuted)
   })
-  callControlsContainer.appendChild(muteButton)
+  callActionsContainer.appendChild(muteButton)
 
-  container.appendChild(callControlsContainer)
+  container.appendChild(callActionsContainer)
 
-  return container
+  return [container, () => cleanupActions.forEach(action => action())]
 }
 
 export function triggerControls(alignToElement: Element, environment: string, resellerToken: string, destination: string, options?: CallControlOptions): Promise<CallApi> {
@@ -227,10 +293,11 @@ export function triggerControls(alignToElement: Element, environment: string, re
       .then(telephony => {
         return telephony.call(destination, options?.timeout?.invite ?? DEFAULT_TIMEOUT)
           .then(call => {
-            const controls = generateCallControls(call, options)
+            const [controls, controlsCleanup] = generateCallControls(call, options)
             document.body.appendChild(controls)
             call.callCompletion.then(() => {
               document.body.removeChild(controls)
+              controlsCleanup()
               telephony.disconnect()
             })
             resolve(call)
