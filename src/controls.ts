@@ -68,8 +68,7 @@ function createButton(): HTMLButtonElement {
   return button
 }
 
-function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (tone: Tone, event: DtmfEvent) => void): [HTMLDivElement, CleanupFunction] {
-  const cleanupActions: Array<CleanupFunction> = []
+function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (tone: Tone, event: DtmfEvent) => void): HTMLDivElement {
   const keypad = options?.ui?.keypad ?? DEFAULT_KEYPAD
   const container = document.createElement('div')
   container.classList.add('dtmf-controls')
@@ -99,27 +98,20 @@ function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (
     button.dataset.dtmf = tone
     button.classList.add(kind)
     let hovering: boolean = false
-    button.addEventListener('mousedown', (e) => {
+    button.addEventListener('mousedown', (e: MouseEvent) => {
       e.preventDefault()
-      e.stopPropagation()
       hovering = true
       onDtmf(tone, 'start')
-      const upHandler = (e: MouseEvent) => {
-        e.preventDefault()
-        e.stopPropagation()
-        onDtmf(tone, hovering ? 'complete' : 'cancel')
+      const upHandler = (_: MouseEvent) => {
         window.removeEventListener('blur', blurHandler)
+        onDtmf(tone, hovering ? 'complete' : 'cancel')
       }
       const blurHandler = (_: FocusEvent) => {
-        onDtmf(tone, 'cancel')
         window.removeEventListener('mouseup', upHandler)
+        onDtmf(tone, 'cancel')
       }
       window.addEventListener('mouseup', upHandler, { once: true })
       window.addEventListener('blur', blurHandler, { once: true })
-      cleanupActions.push(() => {
-        window.removeEventListener('mouseup', upHandler)
-        window.removeEventListener('blur', blurHandler)
-      })
     })
     button.addEventListener('mouseover', () => {
       hovering = true
@@ -130,7 +122,7 @@ function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (
     container.appendChild(button)
   }
 
-  return [container, () => cleanupActions.forEach(action => action())]
+  return container
 }
 
 function dtmfPlayer(outputNode: AudioNode, inputIndex: number, volume: number): (tone: Tone | undefined) => void {
@@ -265,14 +257,13 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
   }
 
   if ((options?.ui?.keypad ?? DEFAULT_KEYPAD) !== 'none') {
-    const [dtmfContainer, dtmfCleanup] = generateDtmfControls(options, (tone, event) => {
+    const dtmfContainer = generateDtmfControls(options, (tone, event) => {
       if (event === 'complete') {
         callApi.sendTone(tone)
       }
       playTone(event === 'start' ? tone : undefined)
     })
     container.appendChild(dtmfContainer)
-    cleanupActions.push(dtmfCleanup)
   }
 
   const callActionsContainer = document.createElement('div')
@@ -283,7 +274,6 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
   dropButton.innerHTML = images.drop
   dropButton.addEventListener('click', (e) => {
     e.preventDefault()
-    e.stopPropagation()
     callApi.drop()
   })
   callActionsContainer.appendChild(dropButton)
@@ -293,7 +283,6 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
   muteButtonSetState(muteButton, false)
   muteButton.addEventListener('click', (e) => {
     e.preventDefault()
-    e.stopPropagation()
     const isCurrentlyMuted = !!muteButton.dataset.muted
     if (isCurrentlyMuted) {
       delete muteButton.dataset.muted
@@ -315,10 +304,20 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
     container.classList.add(uiPosition.side)
     const [distanceX, distanceY] = uiPosition.distance ?? [0, 0]
 
-    const resizeHandler: ResizeObserverCallback = () => {
+    const position = () => {
       const anchorBoundingRect = anchor.getBoundingClientRect()
-      const anchorTopOffset = (anchorBoundingRect.height - anchor.clientHeight) / 2.0
-      const anchorLeftOffset = (anchorBoundingRect.width - anchor.clientWidth) / 2.0
+      let anchorTopOffset: number
+      if (anchor.clientHeight !== 0) {
+        anchorTopOffset = (anchorBoundingRect.height - anchor.clientHeight) / 2.0
+      } else {
+        anchorTopOffset = 0
+      }
+      let anchorLeftOffset: number
+      if (anchor.clientWidth !== 0) {
+        anchorLeftOffset = (anchorBoundingRect.width - anchor.clientWidth) / 2.0
+      } else {
+        anchorLeftOffset = 0
+      }
 
       switch (uiPosition.side) {
         case 'top':
@@ -340,7 +339,8 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
       }
     }
 
-    const resizeObserver = new ResizeObserver(resizeHandler)
+    position()
+    const resizeObserver = new ResizeObserver(position)
     resizeObserver.observe(container)
     resizeObserver.observe(anchor)
     cleanupActions.push(() => resizeObserver.disconnect())

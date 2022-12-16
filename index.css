@@ -9,6 +9,6 @@ body > main {
     margin: auto;
 }
 
-button#connect {
+span#connect {
     position: relative;
 }

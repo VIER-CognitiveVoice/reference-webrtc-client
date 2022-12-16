@@ -32,6 +32,10 @@ div.call-controls button:active {
     fill: hsl(0, 0%, 100%);
 }
 
+div.call-controls button:hover {
+    cursor: pointer;
+}
+
 div.call-controls > div.dtmf-controls {
     display: grid;
     grid-gap: 6px;

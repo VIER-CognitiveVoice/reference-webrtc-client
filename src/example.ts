@@ -18,8 +18,8 @@ window.addEventListener('DOMContentLoaded', () => {
     console.error('Submit button not found in form!')
     return
   }
-  const connectButtonLabel = connectButton.querySelector<HTMLSpanElement>(':scope > span')!
-  const connectButtonDefaultText = connectButtonLabel.innerText
+
+  const connectButtonDefaultText = connectButton.innerText
 
   let currentCall: CallApi | null = null
 
@@ -54,7 +54,7 @@ window.addEventListener('DOMContentLoaded', () => {
       return
     }
 
-    connectButtonLabel.innerText = 'Connecting...'
+    connectButton.innerText = 'Connecting...'
     connectButton.disabled = true
 
     const options: CallControlOptions = {
@@ -63,7 +63,7 @@ window.addEventListener('DOMContentLoaded', () => {
       },
       ui: {
         keypad: 'full',
-        anchor: connectButton,
+        anchor: connectButton.parentElement!,
         position: {
           side: 'right',
           distance: [5, -5],
@@ -74,14 +74,14 @@ window.addEventListener('DOMContentLoaded', () => {
       .then(async (callApi) => {
         currentCall = callApi
         console.log('Call was accepted!', callApi)
-        connectButtonLabel.innerText = 'Connected'
+        connectButton.innerText = 'Connected'
         callApi.callCompletion.then(() => {
           currentCall = null
-          connectButtonLabel.innerText = connectButtonDefaultText
+          connectButton.innerText = connectButtonDefaultText
           connectButton.disabled = false
         })
       }, (reason) => {
-        connectButtonLabel.innerText = connectButtonDefaultText
+        connectButton.innerText = connectButtonDefaultText
         connectButton.disabled = false
         console.log('Call failed', reason)
       })
