@@ -14,13 +14,59 @@ const images = {
   unmuted: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Pro 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path d="M192 0C139 0 96 43 96 96V256c0 53 43 96 96 96s96-43 96-96V96c0-53-43-96-96-96zM64 216c0-13.3-10.7-24-24-24s-24 10.7-24 24v40c0 89.1 66.2 162.7 152 174.4V464H120c-13.3 0-24 10.7-24 24s10.7 24 24 24h72 72c13.3 0 24-10.7 24-24s-10.7-24-24-24H216V430.4c85.8-11.7 152-85.3 152-174.4V216c0-13.3-10.7-24-24-24s-24 10.7-24 24v40c0 70.7-57.3 128-128 128s-128-57.3-128-128V216z"/></svg>',
 }
 
+export interface VolumeOptions {
+  masterVolume?: number
+  callVolume?: number
+  dtmfVolume?: number
+}
+
+export const DEFAULT_TIMEOUT = 10000
+
+export interface TimeoutOptions {
+  register?: number
+  invite?: number
+}
+
+export interface AudioOptions {
+  context?: AudioContext
+  outputNode?: AudioNode
+}
+
+export type KeypadMode = 'none' | 'standard' | 'full'
+export type DarkMode = 'yes' | 'no' | 'auto'
+export type UiPositionSide = 'top' | 'left' | 'bottom' | 'right'
+
+export interface UiPosition {
+  side: UiPositionSide
+  distance?: [number, number]
+}
+
+export const DEFAULT_KEYPAD: KeypadMode = 'full'
+export const DEFAULT_DARK_MODE: DarkMode = 'auto'
+
+export interface UiOptions {
+  keypad?: KeypadMode
+  dark?: DarkMode
+  anchor?: Element
+  position?: UiPosition
+}
+
+export interface CallControlOptions {
+  audio?: AudioOptions
+  volume?: VolumeOptions
+  timeout?: TimeoutOptions
+  ui?: UiOptions
+}
+
+export type CleanupFunction = () => void
+
+type DtmfEvent = 'start' | 'complete' | 'cancel'
+
 function createButton(): HTMLButtonElement {
   const button = document.createElement('button')
   button.type = 'button'
   return button
 }
-
-type DtmfEvent = 'start' | 'complete' | 'cancel'
 
 function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (tone: Tone, event: DtmfEvent) => void): [HTMLDivElement, CleanupFunction] {
   const cleanupActions: Array<CleanupFunction> = []
@@ -139,50 +185,6 @@ function dtmfPlayer(outputNode: AudioNode, inputIndex: number, volume: number): 
   }
 }
 
-export interface VolumeOptions {
-  masterVolume?: number
-  callVolume?: number
-  dtmfVolume?: number
-}
-
-export const DEFAULT_TIMEOUT = 10000
-
-export interface TimeoutOptions {
-  register?: number
-  invite?: number
-}
-
-export interface AudioOptions {
-  context?: AudioContext
-  outputNode?: AudioNode
-}
-
-export type KeypadMode = 'none' | 'standard' | 'full'
-export type DarkMode = 'yes' | 'no' | 'auto'
-export type UiPositionSide = 'top' | 'left' | 'bottom' | 'right'
-
-export interface UiPosition {
-  side: UiPositionSide
-  distance?: [number, number]
-}
-
-export const DEFAULT_KEYPAD: KeypadMode = 'full'
-export const DEFAULT_DARK_MODE: DarkMode = 'auto'
-
-export interface UiOptions {
-  keypad?: KeypadMode
-  dark?: DarkMode
-  anchor?: Element
-  position?: UiPosition
-}
-
-export interface CallControlOptions {
-  audio?: AudioOptions
-  volume?: VolumeOptions
-  timeout?: TimeoutOptions
-  ui?: UiOptions
-}
-
 function enableMediaStreamAudioInChrome(stream: MediaStream) {
   // yes, this object is indeed created, modified and discarded.
   // see: https://stackoverflow.com/questions/41784137/webrtc-doesnt-work-with-audiocontext
@@ -207,8 +209,6 @@ function muteButtonSetState(button: HTMLButtonElement, muted: boolean) {
     button.innerHTML = images.unmuted
   }
 }
-
-export type CleanupFunction = () => void
 
 export function generateCallControls(callApi: CallApi, options?: CallControlOptions): [HTMLDivElement, CleanupFunction] {
 
