@@ -31,10 +31,13 @@ div.call-controls > div.dtmf-controls > button {
 
 div.call-controls button {
     color: hsl(0, 0%, 84%);
+    fill: hsl(0, 0%, 84%);
+    text-align: center;
 }
 
 div.call-controls button:active {
     color: hsl(0, 0%, 100%);
+    fill: hsl(0, 0%, 100%);
 }
 
 div.call-controls > div.dtmf-controls > button.digit {
@@ -75,6 +78,12 @@ div.call-controls > div.call-actions > button {
     padding: 6px 10px;
     font-size: 16px;
     line-height: 16px;
+    width: 45px
+}
+
+div.call-controls > div.call-actions > button > * {
+    height: 16px;
+    color: red;
 }
 
 div.call-controls > div.call-actions > button.drop {
@@ -84,6 +93,8 @@ div.call-controls > div.call-actions > button.drop:hover {
     background-color: hsl(0, 100%, 40%);
 }
 
+div.call-controls > div.call-actions > button.mute-toggle {
+}
 div.call-controls > div.call-actions > button.mute-toggle.unmuted {
     background-color: hsl(132, 100%, 15%);
 }
