@@ -6,5 +6,5 @@ rm -Rv dist
 npx tsc
 cp -v package.json dist
 cd dist
-rm -v example.*
+rm -v example.* webcomponent.*
 npm publish --access=public

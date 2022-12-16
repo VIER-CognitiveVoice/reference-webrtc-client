@@ -352,7 +352,7 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
   return [container, () => cleanupActions.forEach(action => action())]
 }
 
-export function triggerControls(alignToElement: Element, environment: string, resellerToken: string, destination: string, options?: CallControlOptions): Promise<CallApi> {
+export function triggerControls(environment: string, resellerToken: string, destination: string, options?: CallControlOptions): Promise<CallApi> {
   return new Promise((resolve, reject) => {
     fetchWebRtcAuthDetails(environment, resellerToken)
       .then(details => setupSipClient(details, options?.timeout?.register ?? DEFAULT_TIMEOUT))
@@ -399,7 +399,14 @@ export function mountControlsTo(triggerElement: Element | string, options?: Call
         reject(new Error('No destination configured!'))
         return
       }
-      return triggerControls(element, environment, resellerToken, destination, options)
+      const customizedOptions: CallControlOptions = {
+        ...options,
+        ui: {
+          ...options?.ui,
+            anchor: element,
+        },
+      }
+      return triggerControls(environment, resellerToken, destination, customizedOptions)
     }, { once: true })
   })
 }
