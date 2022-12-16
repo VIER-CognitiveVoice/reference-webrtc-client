@@ -1,14 +1,42 @@
 div.call-controls {
+    display: flex;
+    flex-direction: column;
+    row-gap: 20px;
+    align-items: center;
     width: fit-content;
     overflow: hidden;
+    padding: 6px;
+    border: 1px solid black;
+    border-radius: 10px;
+    background-color: white;
+}
+
+div.call-controls.positioned {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+div.call-controls:not(.positioned) {
     margin: 0.5em;
+}
+
+div.call-controls button {
+    color: hsl(0, 0%, 84%);
+    fill: hsl(0, 0%, 84%);
+    text-align: center;
+}
+
+div.call-controls button:active {
+    color: hsl(0, 0%, 100%);
+    fill: hsl(0, 0%, 100%);
 }
 
 div.call-controls > div.dtmf-controls {
     display: grid;
-    grid-gap: 0.3em;
+    grid-gap: 6px;
     width: fit-content;
-    margin: 1em auto;
+    margin: 0 auto;
 }
 div.call-controls > div.dtmf-controls.full  {
     grid-template-columns: repeat(4, 2em);
@@ -27,17 +55,6 @@ div.call-controls > div.dtmf-controls > button {
     vertical-align: super;
     transition: background-color 200ms, box-shadow 100ms;
     font-weight: bolder;
-}
-
-div.call-controls button {
-    color: hsl(0, 0%, 84%);
-    fill: hsl(0, 0%, 84%);
-    text-align: center;
-}
-
-div.call-controls button:active {
-    color: hsl(0, 0%, 100%);
-    fill: hsl(0, 0%, 100%);
 }
 
 div.call-controls > div.dtmf-controls > button.digit {
@@ -67,7 +84,7 @@ div.call-controls > div.dtmf-controls > button.letter:hover {
 div.call-controls > div.call-actions {
     display: flex;
     column-gap: 0.5em;
-    justify-content: center;
+    width: fit-content;
 }
 
 div.call-controls > div.call-actions > button {

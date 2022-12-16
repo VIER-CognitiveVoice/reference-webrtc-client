@@ -53,16 +53,20 @@ function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (
     button.dataset.dtmf = tone
     button.classList.add(kind)
     let hovering: boolean = false
-    button.addEventListener('mousedown', () => {
+    button.addEventListener('mousedown', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
       hovering = true
       onDtmf(tone, 'start')
-      const upHandler = () => {
+      const upHandler = (e: MouseEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
         onDtmf(tone, hovering ? 'complete' : 'cancel')
         window.removeEventListener('blur', blurHandler)
       }
-      const blurHandler = () => {
+      const blurHandler = (_: FocusEvent) => {
         onDtmf(tone, 'cancel')
-        window.removeEventListener('blur', upHandler)
+        window.removeEventListener('mouseup', upHandler)
       }
       window.addEventListener('mouseup', upHandler, { once: true })
       window.addEventListener('blur', blurHandler, { once: true })
@@ -155,6 +159,12 @@ export interface AudioOptions {
 
 export type KeypadMode = 'none' | 'standard' | 'full'
 export type DarkMode = 'yes' | 'no' | 'auto'
+export type UiPositionSide = 'top' | 'left' | 'bottom' | 'right'
+
+export interface UiPosition {
+  side: UiPositionSide
+  distance?: [number, number]
+}
 
 export const DEFAULT_KEYPAD: KeypadMode = 'full'
 export const DEFAULT_DARK_MODE: DarkMode = 'auto'
@@ -162,6 +172,8 @@ export const DEFAULT_DARK_MODE: DarkMode = 'auto'
 export interface UiOptions {
   keypad?: KeypadMode
   dark?: DarkMode
+  anchor?: Element
+  position?: UiPosition
 }
 
 export interface CallControlOptions {
@@ -269,7 +281,9 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
   const dropButton = createButton()
   dropButton.classList.add('drop')
   dropButton.innerHTML = images.drop
-  dropButton.addEventListener('click', () => {
+  dropButton.addEventListener('click', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
     callApi.drop()
   })
   callActionsContainer.appendChild(dropButton)
@@ -277,7 +291,9 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
   const muteButton = createButton()
   muteButton.classList.add('mute-toggle')
   muteButtonSetState(muteButton, false)
-  muteButton.addEventListener('click', () => {
+  muteButton.addEventListener('click', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
     const isCurrentlyMuted = !!muteButton.dataset.muted
     if (isCurrentlyMuted) {
       delete muteButton.dataset.muted
@@ -291,6 +307,48 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
 
   container.appendChild(callActionsContainer)
 
+
+  const anchor: Element = options?.ui?.anchor ?? document.body
+  const uiPosition = options?.ui?.position
+  if (uiPosition) {
+    container.classList.add('positioned')
+    container.classList.add(uiPosition.side)
+    const [distanceX, distanceY] = uiPosition.distance ?? [0, 0]
+
+    const resizeHandler: ResizeObserverCallback = () => {
+      const anchorBoundingRect = anchor.getBoundingClientRect()
+      const anchorTopOffset = (anchorBoundingRect.height - anchor.clientHeight) / 2.0
+      const anchorLeftOffset = (anchorBoundingRect.width - anchor.clientWidth) / 2.0
+
+      switch (uiPosition.side) {
+        case 'top':
+          container.style.top = `${-container.getBoundingClientRect().height - (anchorTopOffset + distanceY)}px`
+          container.style.left = `${-anchorLeftOffset + distanceX}px`
+          break
+        case 'left':
+          container.style.top = `${-anchorTopOffset + distanceY}px`
+          container.style.left = `${-container.getBoundingClientRect().width - (anchorLeftOffset + distanceX)}px`
+          break
+        case 'bottom':
+          container.style.top = `${anchorBoundingRect.height - anchorTopOffset + distanceY}px`
+          container.style.left = `${-anchorLeftOffset + distanceX}px`
+          break
+        case 'right':
+          container.style.top = `${-anchorTopOffset + distanceY}px`
+          container.style.left = `${anchorBoundingRect.width - anchorLeftOffset + distanceX}px`
+          break
+      }
+    }
+
+    const resizeObserver = new ResizeObserver(resizeHandler)
+    resizeObserver.observe(container)
+    resizeObserver.observe(anchor)
+    cleanupActions.push(() => resizeObserver.disconnect())
+
+  }
+  anchor.appendChild(container)
+  cleanupActions.push(() => anchor.removeChild(container))
+
   return [container, () => cleanupActions.forEach(action => action())]
 }
 
@@ -301,10 +359,8 @@ export function triggerControls(alignToElement: Element, environment: string, re
       .then(telephony => {
         return telephony.call(destination, options?.timeout?.invite ?? DEFAULT_TIMEOUT)
           .then(call => {
-            const [controls, controlsCleanup] = generateCallControls(call, options)
-            document.body.appendChild(controls)
+            const [, controlsCleanup] = generateCallControls(call, options)
             call.callCompletion.then(() => {
-              document.body.removeChild(controls)
               controlsCleanup()
               telephony.disconnect()
             })

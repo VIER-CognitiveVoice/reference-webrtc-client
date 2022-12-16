@@ -3,3 +3,12 @@ html, body {
     padding: 0;
     font-family: Verdana, sans-serif;
 }
+
+body > main {
+    width: 80%;
+    margin: auto;
+}
+
+button#connect {
+    position: relative;
+}

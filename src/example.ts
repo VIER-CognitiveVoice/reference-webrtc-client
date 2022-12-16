@@ -13,12 +13,13 @@ window.addEventListener('DOMContentLoaded', () => {
     console.error('Form not found!')
     return
   }
-  const submitButton = form.querySelector<HTMLButtonElement>('button[type=submit]')
-  if (!submitButton) {
+  const connectButton = form.querySelector<HTMLButtonElement>('button[type=submit]')
+  if (!connectButton) {
     console.error('Submit button not found in form!')
     return
   }
-  const submitButtonText = submitButton.innerText
+  const connectButtonLabel = connectButton.querySelector<HTMLSpanElement>(':scope > span')!
+  const connectButtonDefaultText = connectButtonLabel.innerText
 
   let currentCall: CallApi | null = null
 
@@ -53,8 +54,8 @@ window.addEventListener('DOMContentLoaded', () => {
       return
     }
 
-    submitButton.innerText = 'Connecting...'
-    submitButton.disabled = true
+    connectButtonLabel.innerText = 'Connecting...'
+    connectButton.disabled = true
 
     const options: CallControlOptions = {
       volume: {
@@ -62,21 +63,26 @@ window.addEventListener('DOMContentLoaded', () => {
       },
       ui: {
         keypad: 'full',
+        anchor: connectButton,
+        position: {
+          side: 'right',
+          distance: [5, -5],
+        },
       },
     }
-    triggerControls(submitButton, environment, resellerToken, destination, options)
+    triggerControls(connectButton, environment, resellerToken, destination, options)
       .then(async (callApi) => {
         currentCall = callApi
         console.log('Call was accepted!', callApi)
-        submitButton.innerHTML = 'Connected'
+        connectButtonLabel.innerText = 'Connected'
         callApi.callCompletion.then(() => {
           currentCall = null
-          submitButton.innerText = submitButtonText
-          submitButton.disabled = false
+          connectButtonLabel.innerText = connectButtonDefaultText
+          connectButton.disabled = false
         })
       }, (reason) => {
-        submitButton.innerText = submitButtonText
-        submitButton.disabled = false
+        connectButtonLabel.innerText = connectButtonDefaultText
+        connectButton.disabled = false
         console.log('Call failed', reason)
       })
   })
