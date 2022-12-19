@@ -12,3 +12,21 @@ body > main {
 span#connect {
     position: relative;
 }
+
+cvg-webrtc-button::part(trigger) {
+    border: 0;
+    color: hsl(0, 0%, 80%);
+    background-color: hsl(120, 100%, 15%);
+    padding: 2px 10px;
+    border-radius: 4px;
+}
+cvg-webrtc-button::part(trigger):hover {
+    background-color: hsl(120, 100%, 30%);
+}
+cvg-webrtc-button::part(trigger):active:not(:disabled) {
+    color: hsl(0, 0%, 100%);
+}
+cvg-webrtc-button::part(trigger):disabled {
+    background-color: hsl(0, 100%, 20%);
+    text-decoration: line-through;
+}

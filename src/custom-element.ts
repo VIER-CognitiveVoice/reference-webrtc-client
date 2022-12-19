@@ -32,6 +32,7 @@ export class CvgWebRtcButton extends HTMLElement {
     this.buttonContainer = document.createElement('div')
     this.buttonContainer.classList.add('button-container')
     this.button = document.createElement('button')
+    this.button.part.add('trigger')
     this.button.type = 'button'
     this.button.innerText = 'Call'
     this.buttonContainer.appendChild(this.button)
