@@ -1,6 +1,7 @@
 import {
   CallControlOptions,
   DarkMode,
+  KeypadMode,
   triggerControls,
 } from './controls'
 import { CallApi } from './client'
@@ -11,7 +12,7 @@ export const ELEMENT_NAME = 'cvg-webrtc-button'
 export class CvgWebRtcButton extends HTMLElement {
 
   static get observedAttributes() {
-    return ['environment', 'reseller-token', 'destination', 'dtmf-volume', 'dark-mode']
+    return ['environment', 'reseller-token', 'destination', 'dtmf-volume', 'dark-mode', 'keypad']
   }
 
   private currentCall: CallApi | undefined = undefined
@@ -70,6 +71,19 @@ export class CvgWebRtcButton extends HTMLElement {
         break;
     }
 
+    let keypadMode: KeypadMode | undefined = undefined
+    switch (this.getAttribute('keypad')) {
+      case 'none':
+        keypadMode = 'none'
+        break;
+      case 'standard':
+        keypadMode = 'standard'
+        break;
+      case 'full':
+        keypadMode = 'full'
+        break;
+    }
+
     const options: CallControlOptions = {
       ui: {
         anchor: this.buttonContainer,
@@ -78,6 +92,7 @@ export class CvgWebRtcButton extends HTMLElement {
           distance: [5, -5],
         },
         dark: darkMode,
+        keypad: keypadMode,
       },
       volume: {
         dtmfVolume: Number(dtmfVolume)
