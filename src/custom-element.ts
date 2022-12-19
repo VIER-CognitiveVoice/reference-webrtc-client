@@ -31,6 +31,10 @@ export class CvgWebRtcButton extends HTMLElement {
     }
   }
 
+  get call(): CallApi | null {
+    return this.currentCall ?? null
+  }
+
   constructor() {
     super()
 
@@ -121,6 +125,7 @@ export class CvgWebRtcButton extends HTMLElement {
       }
     }
 
+    this.dispatchEvent(new NewCallEvent())
     setTriggerButtonEnabled(false)
     triggerControls(environment, resellerToken, destination, options)
       .then(async (callApi) => {
@@ -129,10 +134,12 @@ export class CvgWebRtcButton extends HTMLElement {
         callApi.callCompletion.then(() => {
           this.currentCall = undefined
           setTriggerButtonEnabled(true)
+          this.dispatchEvent(new CallEndedEvent())
         })
       }, (reason) => {
         setTriggerButtonEnabled(true)
         console.log('Call failed', reason)
+        this.dispatchEvent(new CallEndedEvent())
       })
   }
 
@@ -153,5 +160,27 @@ export class CvgWebRtcButton extends HTMLElement {
 
   trigger() {
     this.onButtonClicked()
+  }
+}
+
+export class CallEvent<T> extends CustomEvent<T> {
+  constructor(type: string, detail?: T) {
+    super(type, {
+      bubbles: false,
+      cancelable: false,
+      detail,
+    })
+  }
+}
+
+export class NewCallEvent extends CallEvent<void> {
+  constructor() {
+    super('new_call')
+  }
+}
+
+export class CallEndedEvent extends CallEvent<void> {
+  constructor() {
+    super('call_ended')
   }
 }

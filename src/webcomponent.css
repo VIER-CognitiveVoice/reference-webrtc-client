@@ -108,8 +108,10 @@ div.call-controls > div.call-actions > button {
 }
 
 div.call-controls > div.call-actions > button > * {
+    display: block;
+    width: fit-content;
     height: 16px;
-    color: red;
+    margin: auto;
 }
 
 div.call-controls > div.call-actions > button.drop {
