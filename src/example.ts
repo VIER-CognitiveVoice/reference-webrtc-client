@@ -34,5 +34,6 @@ window.addEventListener('DOMContentLoaded', () => {
   })
   form.addEventListener('submit', (e) => {
     e.preventDefault()
+    connectButton.trigger()
   })
 })

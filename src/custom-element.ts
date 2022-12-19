@@ -1,5 +1,6 @@
 import {
   CallControlOptions,
+  DarkMode,
   triggerControls,
 } from './controls'
 import { CallApi } from './client'
@@ -10,7 +11,7 @@ export const ELEMENT_NAME = 'cvg-webrtc-button'
 export class CvgWebRtcButton extends HTMLElement {
 
   static get observedAttributes() {
-    return ['environment', 'reseller-token', 'destination', 'dtmf-volume']
+    return ['environment', 'reseller-token', 'destination', 'dtmf-volume', 'dark-mode']
   }
 
   private currentCall: CallApi | undefined = undefined
@@ -56,6 +57,19 @@ export class CvgWebRtcButton extends HTMLElement {
 
     const dtmfVolume = this.getAttribute('volume-dtmf') || '0'
 
+    let darkMode: DarkMode | undefined = undefined
+    switch (this.getAttribute('dark-mode')) {
+      case 'yes':
+        darkMode = 'yes'
+        break;
+      case 'no':
+        darkMode = 'no'
+        break;
+      case 'auto':
+        darkMode = 'auto'
+        break;
+    }
+
     const options: CallControlOptions = {
       ui: {
         anchor: this.buttonContainer,
@@ -63,6 +77,7 @@ export class CvgWebRtcButton extends HTMLElement {
           side: 'right',
           distance: [5, -5],
         },
+        dark: darkMode,
       },
       volume: {
         dtmfVolume: Number(dtmfVolume)
@@ -95,5 +110,9 @@ export class CvgWebRtcButton extends HTMLElement {
     if (this.currentCall) {
       this.currentCall.drop()
     }
+  }
+
+  trigger() {
+    this.onButtonClicked()
   }
 }
