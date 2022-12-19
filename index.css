@@ -11,6 +11,10 @@ body > main {
     margin: auto;
 }
 
+body > main > h1 {
+    text-align: center;
+}
+
 a {
     text-decoration: none;
 }
