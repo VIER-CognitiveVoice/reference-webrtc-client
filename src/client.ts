@@ -47,24 +47,97 @@ export interface TelephonyApi {
   disconnect(): void
 }
 
-export enum Tone {
-  ZERO = '0',
-  ONE = '1',
-  TWO = '2',
-  THREE = '3',
-  FOUR = '4',
-  FIVE = '5',
-  SIX = '6',
-  SEVEN = '7',
-  EIGHT = '8',
-  NINE = '9',
-  STAR = '*',
-  POUND = '#',
-  A = 'A',
-  B = 'B',
-  C = 'C',
-  D = 'D',
+export type Tone = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '*' | '#' | 'A' | 'B' | 'C' | 'D'
+export type ToneKind = 'digit' | 'control' | 'letter'
+
+export interface DtmfTone {
+  value: Tone,
+  kind: ToneKind,
+  name: string,
 }
+
+export const ToneMap: { [key: string]: DtmfTone } = {
+  ZERO: {
+    value: '0',
+    kind: 'digit',
+    name: 'zero',
+  },
+  ONE: {
+    value: '1',
+    kind: 'digit',
+    name: 'one',
+  },
+  TWO: {
+    value: '2',
+    kind: 'digit',
+    name: 'two',
+  },
+  THREE: {
+    value: '3',
+    kind: 'digit',
+    name: 'three',
+  },
+  FOUR: {
+    value: '4',
+    kind: 'digit',
+    name: 'four',
+  },
+  FIVE: {
+    value: '5',
+    kind: 'digit',
+    name: 'five',
+  },
+  SIX: {
+    value: '6',
+    kind: 'digit',
+    name: 'six',
+  },
+  SEVEN: {
+    value: '7',
+    kind: 'digit',
+    name: 'seven',
+  },
+  EIGHT: {
+    value: '8',
+    kind: 'digit',
+    name: 'eight',
+  },
+  NINE: {
+    value: '9',
+    kind: 'digit',
+    name: 'nine',
+  },
+  STAR: {
+    value: '*',
+    kind: 'control',
+    name: 'star',
+  },
+  POUND: {
+    value: '#',
+    kind: 'control',
+    name: 'pound',
+  },
+  A: {
+    value: 'A',
+    kind: 'letter',
+    name: 'letter-a',
+  },
+  B: {
+    value: 'B',
+    kind: 'letter',
+    name: 'letter-b',
+  },
+  C: {
+    value: 'C',
+    kind: 'letter',
+    name: 'letter-c',
+  },
+  D: {
+    value: 'D',
+    kind: 'letter',
+    name: 'letter-d',
+  },
+} as const
 
 export interface CallApi {
   readonly media: MediaStream

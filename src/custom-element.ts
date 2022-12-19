@@ -9,6 +9,10 @@ import css from './webcomponent.css'
 
 export const ELEMENT_NAME = 'cvg-webrtc-button'
 
+const TRIGGER_BUTTON_PART = 'trigger'
+const TRIGGER_BUTTON_ENABLED_PART = `${TRIGGER_BUTTON_PART}-enabled`
+const TRIGGER_BUTTON_DISABLED_PART = `${TRIGGER_BUTTON_PART}-disabled`
+
 export class CvgWebRtcButton extends HTMLElement {
 
   static get observedAttributes() {
@@ -32,7 +36,7 @@ export class CvgWebRtcButton extends HTMLElement {
     this.buttonContainer = document.createElement('div')
     this.buttonContainer.classList.add('button-container')
     this.button = document.createElement('button')
-    this.button.part.add('trigger')
+    this.button.part.add(TRIGGER_BUTTON_PART, TRIGGER_BUTTON_ENABLED_PART)
     this.button.type = 'button'
     this.button.innerText = 'Call'
     this.buttonContainer.appendChild(this.button)
@@ -99,17 +103,27 @@ export class CvgWebRtcButton extends HTMLElement {
         dtmfVolume: Number(dtmfVolume)
       }
     }
-    this.button.disabled = true
+
+    const setTriggerButtonEnabled = (enabled: boolean): void => {
+      this.button.disabled = !enabled
+      if (enabled) {
+        this.button.part.replace(TRIGGER_BUTTON_DISABLED_PART, TRIGGER_BUTTON_ENABLED_PART)
+      } else {
+        this.button.part.replace(TRIGGER_BUTTON_ENABLED_PART, TRIGGER_BUTTON_DISABLED_PART)
+      }
+    }
+
+    setTriggerButtonEnabled(false)
     triggerControls(environment, resellerToken, destination, options)
       .then(async (callApi) => {
         this.currentCall = callApi
         console.log('Call was accepted!', callApi)
         callApi.callCompletion.then(() => {
           this.currentCall = undefined
-          this.button.disabled = false
+          setTriggerButtonEnabled(true)
         })
       }, (reason) => {
-        this.button.disabled = false
+        setTriggerButtonEnabled(true)
         console.log('Call failed', reason)
       })
   }

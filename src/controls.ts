@@ -1,8 +1,10 @@
 import {
   CallApi,
+  DtmfTone,
   fetchWebRtcAuthDetails,
   setupSipClient,
   Tone,
+  ToneMap,
 } from './client'
 
 const images = {
@@ -68,35 +70,35 @@ function createButton(): HTMLButtonElement {
   return button
 }
 
-function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (tone: Tone, event: DtmfEvent) => void): HTMLDivElement {
+function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (tone: DtmfTone, event: DtmfEvent) => void): HTMLDivElement {
   const keypad = options?.ui?.keypad ?? DEFAULT_KEYPAD
   const container = document.createElement('div')
-  container.classList.add('dtmf-controls')
-  container.classList.add(keypad)
+  container.classList.add('dtmf-controls', keypad)
+  container.part.add('dtmf-button-container', `dtmf-button-container-${keypad}`)
 
-  type ToneKind = 'digit' | 'control' | 'letter'
 
-  let tones: Array<[Tone, ToneKind]>
+  let tones: Array<DtmfTone>
   if (keypad === 'full') {
     tones = [
-      [Tone.ONE, 'digit'], [Tone.TWO, 'digit'], [Tone.THREE, 'digit'], [Tone.A, 'letter'],
-      [Tone.FOUR, 'digit'], [Tone.FIVE, 'digit'], [Tone.SIX, 'digit'], [Tone.B, 'letter'],
-      [Tone.SEVEN, 'digit'], [Tone.EIGHT, 'digit'], [Tone.NINE, 'digit'], [Tone.C, 'letter'],
-      [Tone.STAR, 'control'], [Tone.ZERO, 'digit'], [Tone.POUND, 'control'], [Tone.D, 'letter'],
+      ToneMap.ONE,   ToneMap.TWO,   ToneMap.THREE, ToneMap.A,
+      ToneMap.FOUR,  ToneMap.FIVE,  ToneMap.SIX,   ToneMap.B,
+      ToneMap.SEVEN, ToneMap.EIGHT, ToneMap.NINE,  ToneMap.C,
+      ToneMap.STAR,  ToneMap.ZERO,  ToneMap.POUND, ToneMap.D,
     ]
   } else {
     tones = [
-      [Tone.ONE, 'digit'], [Tone.TWO, 'digit'], [Tone.THREE, 'digit'],
-      [Tone.FOUR, 'digit'], [Tone.FIVE, 'digit'], [Tone.SIX, 'digit'],
-      [Tone.SEVEN, 'digit'], [Tone.EIGHT, 'digit'], [Tone.NINE, 'digit'],
-      [Tone.STAR, 'control'], [Tone.ZERO, 'digit'], [Tone.POUND, 'control'],
+      ToneMap.ONE, ToneMap.TWO, ToneMap.THREE,
+      ToneMap.FOUR, ToneMap.FIVE, ToneMap.SIX,
+      ToneMap.SEVEN, ToneMap.EIGHT, ToneMap.NINE,
+      ToneMap.STAR, ToneMap.ZERO, ToneMap.POUND,
     ]
   }
-  for (const [tone, kind] of tones) {
+  for (const tone of tones) {
     const button = createButton()
-    button.innerText = tone
-    button.dataset.dtmf = tone
-    button.classList.add(kind)
+    button.innerText = tone.value
+    button.dataset.dtmf = tone.name
+    button.classList.add(tone.kind)
+    button.part.add('dtmf-button', `dtmf-button-${tone.kind}`, `dtmf-button-${tone.name}`)
     let hovering: boolean = false
     button.addEventListener('mousedown', (e: MouseEvent) => {
       e.preventDefault()
@@ -125,7 +127,7 @@ function generateDtmfControls(options: CallControlOptions | undefined, onDtmf: (
   return container
 }
 
-function dtmfPlayer(outputNode: AudioNode, inputIndex: number, volume: number): (tone: Tone | undefined) => void {
+function dtmfPlayer(outputNode: AudioNode, inputIndex: number, volume: number): (tone: DtmfTone | undefined) => void {
   const gain = outputNode.context.createGain()
   gain.gain.value = 0
   gain.connect(outputNode, 0, inputIndex)
@@ -141,35 +143,35 @@ function dtmfPlayer(outputNode: AudioNode, inputIndex: number, volume: number): 
   const horizontalFrequencies = [1209, 1336, 1477, 1633]
 
   const toneToFrequency: { [t in Tone]: [number, number] } = {
-    [Tone.ONE]: [verticalFrequencies[0], horizontalFrequencies[0]],
-    [Tone.TWO]: [verticalFrequencies[0], horizontalFrequencies[1]],
-    [Tone.THREE]: [verticalFrequencies[0], horizontalFrequencies[2]],
-    [Tone.A]: [verticalFrequencies[0], horizontalFrequencies[3]],
-    [Tone.FOUR]: [verticalFrequencies[1], horizontalFrequencies[0]],
-    [Tone.FIVE]: [verticalFrequencies[1], horizontalFrequencies[1]],
-    [Tone.SIX]: [verticalFrequencies[1], horizontalFrequencies[2]],
-    [Tone.B]: [verticalFrequencies[1], horizontalFrequencies[3]],
-    [Tone.SEVEN]: [verticalFrequencies[2], horizontalFrequencies[0]],
-    [Tone.EIGHT]: [verticalFrequencies[2], horizontalFrequencies[1]],
-    [Tone.NINE]: [verticalFrequencies[2], horizontalFrequencies[2]],
-    [Tone.C]: [verticalFrequencies[2], horizontalFrequencies[3]],
-    [Tone.STAR]: [verticalFrequencies[3], horizontalFrequencies[0]],
-    [Tone.ZERO]: [verticalFrequencies[3], horizontalFrequencies[1]],
-    [Tone.POUND]: [verticalFrequencies[3], horizontalFrequencies[2]],
-    [Tone.D]: [verticalFrequencies[3], horizontalFrequencies[3]],
+    '1': [verticalFrequencies[0], horizontalFrequencies[0]],
+    '2': [verticalFrequencies[0], horizontalFrequencies[1]],
+    '3': [verticalFrequencies[0], horizontalFrequencies[2]],
+    'A': [verticalFrequencies[0], horizontalFrequencies[3]],
+    '4': [verticalFrequencies[1], horizontalFrequencies[0]],
+    '5': [verticalFrequencies[1], horizontalFrequencies[1]],
+    '6': [verticalFrequencies[1], horizontalFrequencies[2]],
+    'B': [verticalFrequencies[1], horizontalFrequencies[3]],
+    '7': [verticalFrequencies[2], horizontalFrequencies[0]],
+    '8': [verticalFrequencies[2], horizontalFrequencies[1]],
+    '9': [verticalFrequencies[2], horizontalFrequencies[2]],
+    'C': [verticalFrequencies[2], horizontalFrequencies[3]],
+    '*': [verticalFrequencies[3], horizontalFrequencies[0]],
+    '0': [verticalFrequencies[3], horizontalFrequencies[1]],
+    '#': [verticalFrequencies[3], horizontalFrequencies[2]],
+    'D': [verticalFrequencies[3], horizontalFrequencies[3]],
   }
 
   window.addEventListener('blur', () => {
     gain.gain.value = 0
   })
 
-  return function playTone(tone: Tone | undefined) {
+  return function playTone(tone: DtmfTone | undefined) {
     if (tone === undefined) {
       gain.gain.value = 0
       return
     }
 
-    const [vertical, horizontal] = toneToFrequency[tone]
+    const [vertical, horizontal] = toneToFrequency[tone.value]
     oscillatorVertical.frequency.value = vertical
     oscillatorHorizontal.frequency.value = horizontal
 
@@ -186,18 +188,24 @@ function enableMediaStreamAudioInChrome(stream: MediaStream) {
   audio.srcObject = stream
 }
 
-function muteButtonSetState(button: HTMLButtonElement, muted: boolean) {
+function replaceOrAdd(list: DOMTokenList, oldValue: string, newValue: string) {
+  if (!list.replace(oldValue, newValue)) {
+    list.add(newValue)
+  }
+}
+
+function muteButtonSetState(button: HTMLButtonElement, part: string, muted: boolean) {
   const MUTED = 'muted'
   const UNMUTED = 'unmuted'
+  const MUTED_PART = `${part}-${MUTED}`
+  const UNMUTED_PART = `${part}-${UNMUTED}`
   if (muted) {
-    if (!button.classList.replace(UNMUTED, MUTED)) {
-      button.classList.add(MUTED)
-    }
+    replaceOrAdd(button.classList, UNMUTED, MUTED)
+    replaceOrAdd(button.part, UNMUTED_PART, MUTED_PART)
     button.innerHTML = images.muted
   } else {
-    if (!button.classList.replace(MUTED, UNMUTED)) {
-      button.classList.add(UNMUTED)
-    }
+    replaceOrAdd(button.classList, MUTED, UNMUTED)
+    replaceOrAdd(button.part, MUTED_PART, UNMUTED_PART)
     button.innerHTML = images.unmuted
   }
 }
@@ -207,30 +215,35 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
   const cleanupActions: Array<CleanupFunction> = [];
 
   const container = document.createElement('div')
-  container.classList.add('call-controls')
+  const CONTAINER_PART = 'call-controls'
+  container.classList.add(CONTAINER_PART)
+  container.part.add(CONTAINER_PART)
 
   const DARK_MODE = 'dark-mode'
   const LIGHT_MODE = 'light-mode'
+  const DARK_MODE_PART = `call-controls-${DARK_MODE}`
+  const LIGHT_MODE_PART = `call-controls-${LIGHT_MODE}`
 
   switch (options?.ui?.dark ?? DEFAULT_DARK_MODE) {
     case 'yes':
       container.classList.add(DARK_MODE)
+      container.part.add(DARK_MODE_PART)
       break;
     case 'no':
       container.classList.add(LIGHT_MODE)
+      container.part.add(LIGHT_MODE_PART)
       break;
     case 'auto':
       const darkMedia = window.matchMedia('(prefers-color-scheme: dark)')
       container.classList.add(darkMedia.matches ? DARK_MODE : LIGHT_MODE)
+      container.part.add(darkMedia.matches ? DARK_MODE_PART : LIGHT_MODE_PART)
       const mediaChangeListener = (e: MediaQueryListEvent) => {
         if (e.matches) {
-          if (!container.classList.replace(LIGHT_MODE, DARK_MODE)) {
-            container.classList.add(DARK_MODE)
-          }
+          replaceOrAdd(container.classList, LIGHT_MODE, DARK_MODE)
+          replaceOrAdd(container.part, LIGHT_MODE_PART, DARK_MODE_PART)
         } else {
-          if (!container.classList.replace(DARK_MODE, LIGHT_MODE)) {
-            container.classList.add(LIGHT_MODE)
-          }
+          replaceOrAdd(container.classList, DARK_MODE, LIGHT_MODE)
+          replaceOrAdd(container.part, DARK_MODE_PART, LIGHT_MODE_PART)
         }
       }
       darkMedia.addEventListener('change', mediaChangeListener)
@@ -259,7 +272,7 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
   if ((options?.ui?.keypad ?? DEFAULT_KEYPAD) !== 'none') {
     const dtmfContainer = generateDtmfControls(options, (tone, event) => {
       if (event === 'complete') {
-        callApi.sendTone(tone)
+        callApi.sendTone(tone.value)
       }
       playTone(event === 'start' ? tone : undefined)
     })
@@ -268,9 +281,11 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
 
   const callActionsContainer = document.createElement('div')
   callActionsContainer.classList.add('call-actions')
+  callActionsContainer.part.add('call-actions')
 
   const dropButton = createButton()
   dropButton.classList.add('drop')
+  dropButton.part.add('call-action-drop')
   dropButton.innerHTML = images.drop
   dropButton.addEventListener('click', (e) => {
     e.preventDefault()
@@ -278,9 +293,11 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
   })
   callActionsContainer.appendChild(dropButton)
 
+  const MUTE_BUTTON_PART = 'call-action-mute-toggle'
   const muteButton = createButton()
   muteButton.classList.add('mute-toggle')
-  muteButtonSetState(muteButton, false)
+  muteButton.part.add(MUTE_BUTTON_PART)
+  muteButtonSetState(muteButton, MUTE_BUTTON_PART, false)
   muteButton.addEventListener('click', (e) => {
     e.preventDefault()
     const isCurrentlyMuted = !!muteButton.dataset.muted
@@ -289,7 +306,7 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
     } else {
       muteButton.dataset.muted = 'yes'
     }
-    muteButtonSetState(muteButton, !isCurrentlyMuted)
+    muteButtonSetState(muteButton, MUTE_BUTTON_PART, !isCurrentlyMuted)
     callApi.setMicrophoneMuted(!isCurrentlyMuted)
   })
   callActionsContainer.appendChild(muteButton)
@@ -300,8 +317,8 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
   const anchor: Element = options?.ui?.anchor ?? document.body
   const uiPosition = options?.ui?.position
   if (uiPosition) {
-    container.classList.add('positioned')
-    container.classList.add(uiPosition.side)
+    container.classList.add('positioned', uiPosition.side)
+    container.part.add(`${CONTAINER_PART}-positioned`, `${CONTAINER_PART}-positioned-${uiPosition.side}`)
     const [distanceX, distanceY] = uiPosition.distance ?? [0, 0]
 
     const position = () => {
