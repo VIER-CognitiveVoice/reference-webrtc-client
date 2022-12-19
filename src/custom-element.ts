@@ -37,7 +37,7 @@ export class CvgWebRtcButton extends HTMLElement {
     const shadow = this.attachShadow({ mode: 'open' })
 
     const style = document.createElement('style')
-    style.innerHTML = css
+    style.textContent = css
     shadow.appendChild(style)
 
     this.buttonContainer = document.createElement('div')
@@ -45,7 +45,8 @@ export class CvgWebRtcButton extends HTMLElement {
     this.button = document.createElement('button')
     this.button.part.add(TRIGGER_BUTTON_PART, TRIGGER_BUTTON_ENABLED_PART)
     this.button.type = 'button'
-    this.button.innerText = 'Call'
+    this.button.appendChild(document.createElement('slot'))
+
     this.buttonContainer.appendChild(this.button)
     this.button.addEventListener('click', this.onButtonClicked.bind(this))
     shadow.appendChild(this.buttonContainer)
@@ -136,13 +137,11 @@ export class CvgWebRtcButton extends HTMLElement {
   }
 
   connectedCallback() {
-    this.button.innerHTML = this.innerHTML
     this.connected = true
     window.addEventListener('beforeunload', this.onBeforeUnload)
   }
 
   disconnectedCallback() {
-    this.button.innerHTML = ''
     this.connected = false
     window.removeEventListener('beforeunload', this.onBeforeUnload)
 
