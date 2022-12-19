@@ -15,10 +15,6 @@ const TRIGGER_BUTTON_DISABLED_PART = `${TRIGGER_BUTTON_PART}-disabled`
 
 export class CvgWebRtcButton extends HTMLElement {
 
-  static get observedAttributes() {
-    return ['environment', 'reseller-token', 'destination', 'dtmf-volume', 'dark-mode', 'keypad']
-  }
-
   private currentCall: CallApi | undefined = undefined
   private readonly buttonContainer: HTMLDivElement
   private readonly button: HTMLButtonElement
