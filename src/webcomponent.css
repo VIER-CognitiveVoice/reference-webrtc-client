@@ -75,18 +75,16 @@ div.call-controls > div.dtmf-controls.standard  {
 
 div.call-controls > div.dtmf-controls > button {
     display: flex;
-    font-size: 20px;
     justify-content: center;
     align-items: center;
     border-radius: 50%;
     border: 0;
-    font-family: monospace;
     transition: background-color 200ms, box-shadow 100ms;
-    font-weight: bolder;
 }
 
-div.call-controls > div.dtmf-controls > button[data-dtmf=star] {
-    padding-top: 6px;
+div.call-controls > div.dtmf-controls > button > svg {
+    display: block;
+    height: 25px;
 }
 
 div.call-controls.light-mode > div.dtmf-controls > button.digit {
