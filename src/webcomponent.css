@@ -30,10 +30,6 @@ div.call-controls.positioned {
     top: 0;
 }
 
-div.call-controls:not(.positioned) {
-    margin: 0.5em;
-}
-
 div.call-controls button {
     text-align: center;
 }
@@ -78,13 +74,19 @@ div.call-controls > div.dtmf-controls.standard  {
 }
 
 div.call-controls > div.dtmf-controls > button {
+    display: flex;
+    font-size: 20px;
+    justify-content: center;
+    align-items: center;
     border-radius: 50%;
     border: 0;
     font-family: monospace;
-    line-height: 2em;
-    vertical-align: super;
     transition: background-color 200ms, box-shadow 100ms;
     font-weight: bolder;
+}
+
+div.call-controls > div.dtmf-controls > button[data-dtmf=star] {
+    padding-top: 6px;
 }
 
 div.call-controls.light-mode > div.dtmf-controls > button.digit {
