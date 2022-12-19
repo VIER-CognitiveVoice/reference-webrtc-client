@@ -22,7 +22,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const existingValue = localStorage.getItem(key)
     element.addEventListener('change', () => {
       localStorage.setItem(key, element.value)
-      connectButton.setAttribute(key, element.value)
+      connectButton.setAttribute(element.name, element.value)
     })
     if (existingValue) {
       element.value = existingValue
@@ -30,6 +30,7 @@ window.addEventListener('DOMContentLoaded', () => {
       element.value = queryValue
       localStorage.setItem(key, queryValue)
     }
+    connectButton.setAttribute(element.name, element.value)
   })
   form.addEventListener('submit', (e) => {
     e.preventDefault()
