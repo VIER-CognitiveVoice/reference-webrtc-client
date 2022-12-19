@@ -62,7 +62,14 @@
                     </p>
                     <div id="call-button">
                         <input type="submit" hidden />
-                        <cvg-webrtc-button volume-dtmf="0.03"><span>Call</span></cvg-webrtc-button>
+                        <cvg-webrtc-button
+                                volume-dtmf="0.03"
+                                controls-side="top"
+                                controls-left-distance="-5"
+                                controls-top-distance="5"
+                        >
+                            <span>Call</span>
+                        </cvg-webrtc-button>
                     </div>
                 </form>
             </section>

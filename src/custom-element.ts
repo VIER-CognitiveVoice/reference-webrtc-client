@@ -3,6 +3,7 @@ import {
   DarkMode,
   KeypadMode,
   triggerControls,
+  UiPositionSide,
 } from './controls'
 import { CallApi } from './client'
 import css from './webcomponent.css'
@@ -52,6 +53,18 @@ export class CvgWebRtcButton extends HTMLElement {
     shadow.appendChild(this.buttonContainer)
   }
 
+  private getNumberAttribute(name: string, def: number): number {
+    const value = this.getAttribute(name)
+    if (!value) {
+      return def
+    }
+    const number = Number(value)
+    if (isNaN(number)) {
+      return def
+    }
+    return number
+  }
+
   private onButtonClicked() {
     if (this.currentCall) {
       return
@@ -97,12 +110,31 @@ export class CvgWebRtcButton extends HTMLElement {
         break;
     }
 
+    let controlsSide: UiPositionSide = 'right'
+    switch (this.getAttribute('controls-side')) {
+      case 'top':
+        controlsSide = 'top'
+        break;
+      case 'right':
+        controlsSide = 'right'
+        break;
+      case 'bottom':
+        controlsSide = 'bottom'
+        break;
+      case 'left':
+        controlsSide = 'left'
+        break;
+    }
+
     const options: CallControlOptions = {
       ui: {
         anchor: this.buttonContainer,
         position: {
-          side: 'right',
-          distance: [5, -5],
+          side: controlsSide,
+          distance: [
+            this.getNumberAttribute('controls-left-distance', 0),
+            this.getNumberAttribute('controls-top-distance', 0),
+          ],
         },
         dark: darkMode,
         keypad: keypadMode,
