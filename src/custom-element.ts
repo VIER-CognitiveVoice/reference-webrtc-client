@@ -24,6 +24,13 @@ export class CvgWebRtcButton extends HTMLElement {
   private readonly button: HTMLButtonElement
   private connected: boolean = false
 
+  private readonly onBeforeUnload = () => {
+    if (this.currentCall) {
+      this.currentCall.drop()
+      this.currentCall = undefined
+    }
+  }
+
   constructor() {
     super()
 
@@ -131,14 +138,17 @@ export class CvgWebRtcButton extends HTMLElement {
   connectedCallback() {
     this.button.innerHTML = this.innerHTML
     this.connected = true
+    window.addEventListener('beforeunload', this.onBeforeUnload)
   }
 
   disconnectedCallback() {
     this.button.innerHTML = ''
     this.connected = false
+    window.removeEventListener('beforeunload', this.onBeforeUnload)
 
     if (this.currentCall) {
       this.currentCall.drop()
+      this.currentCall = undefined
     }
   }
 
