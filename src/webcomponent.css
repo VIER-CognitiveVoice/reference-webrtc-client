@@ -11,8 +11,17 @@ div.call-controls {
     width: fit-content;
     overflow: hidden;
     padding: 6px;
-    border: 1px solid black;
+    border: 1px solid;
     border-radius: 10px;
+}
+
+div.call-controls.light-mode {
+    border-color: black;
+    background-color: white;
+}
+
+div.call-controls.dark-mode {
+    border-color: black;
     background-color: white;
 }
 
@@ -27,12 +36,25 @@ div.call-controls:not(.positioned) {
 }
 
 div.call-controls button {
-    color: hsl(0, 0%, 84%);
-    fill: hsl(0, 0%, 84%);
     text-align: center;
 }
 
-div.call-controls button:active {
+div.call-controls.light-mode button {
+    color: hsl(0, 0%, 84%);
+    fill: hsl(0, 0%, 84%);
+}
+
+div.call-controls.dark-mode button {
+    color: hsl(0, 0%, 84%);
+    fill: hsl(0, 0%, 84%);
+}
+
+div.call-controls.light-mode button:active {
+    color: hsl(0, 0%, 100%);
+    fill: hsl(0, 0%, 100%);
+}
+
+div.call-controls.dark-mode button:active {
     color: hsl(0, 0%, 100%);
     fill: hsl(0, 0%, 100%);
 }
@@ -66,27 +88,51 @@ div.call-controls > div.dtmf-controls > button {
     font-weight: bolder;
 }
 
-div.call-controls > div.dtmf-controls > button.digit {
+div.call-controls.light-mode > div.dtmf-controls > button.digit {
     background-color: hsl(0, 0%, 24%);
 }
 
-div.call-controls > div.dtmf-controls > button.digit:hover {
+div.call-controls.light-mode > div.dtmf-controls > button.digit:hover {
     background-color: hsl(0, 0%, 39%);
 }
 
-div.call-controls > div.dtmf-controls > button.control {
+div.call-controls.light-mode > div.dtmf-controls > button.control {
     background-color: hsl(93, 100%, 13%);
 }
 
-div.call-controls > div.dtmf-controls > button.control:hover {
+div.call-controls.light-mode > div.dtmf-controls > button.control:hover {
     background-color: hsl(93, 100%, 25%);
 }
 
-div.call-controls > div.dtmf-controls > button.letter {
+div.call-controls.light-mode > div.dtmf-controls > button.letter {
     background-color: hsl(0, 100%, 13%);
 }
 
-div.call-controls > div.dtmf-controls > button.letter:hover {
+div.call-controls.light-mode > div.dtmf-controls > button.letter:hover {
+    background-color: hsl(0, 100%, 24%);
+}
+
+div.call-controls.dark-mode > div.dtmf-controls > button.digit {
+    background-color: hsl(0, 0%, 24%);
+}
+
+div.call-controls.dark-mode > div.dtmf-controls > button.digit:hover {
+    background-color: hsl(0, 0%, 39%);
+}
+
+div.call-controls.dark-mode > div.dtmf-controls > button.control {
+    background-color: hsl(93, 100%, 13%);
+}
+
+div.call-controls.dark-mode > div.dtmf-controls > button.control:hover {
+    background-color: hsl(93, 100%, 25%);
+}
+
+div.call-controls.dark-mode > div.dtmf-controls > button.letter {
+    background-color: hsl(0, 100%, 13%);
+}
+
+div.call-controls.dark-mode > div.dtmf-controls > button.letter:hover {
     background-color: hsl(0, 100%, 24%);
 }
 
@@ -113,25 +159,44 @@ div.call-controls > div.call-actions > button > * {
     margin: auto;
 }
 
-div.call-controls > div.call-actions > button.drop {
+div.call-controls.light-mode > div.call-actions > button.drop {
     background-color: hsl(0, 100%, 30%);
 }
-div.call-controls > div.call-actions > button.drop:hover {
+div.call-controls.light-mode > div.call-actions > button.drop:hover {
     background-color: hsl(0, 100%, 40%);
 }
 
-div.call-controls > div.call-actions > button.mute-toggle {
-}
-div.call-controls > div.call-actions > button.mute-toggle.unmuted {
+div.call-controls.light-mode > div.call-actions > button.mute-toggle.unmuted {
     background-color: hsl(132, 100%, 15%);
 }
-div.call-controls > div.call-actions > button.mute-toggle.unmuted:hover {
+div.call-controls.light-mode > div.call-actions > button.mute-toggle.unmuted:hover {
     background-color: hsl(132, 100%, 25%);
 }
 
-div.call-controls > div.call-actions > button.mute-toggle.muted {
+div.call-controls.light-mode > div.call-actions > button.mute-toggle.muted {
     background-color: hsl(0, 100%, 30%);
 }
-div.call-controls > div.call-actions > button.mute-toggle.muted:hover {
+div.call-controls.light-mode > div.call-actions > button.mute-toggle.muted:hover {
+    background-color: hsl(0, 100%, 40%);
+}
+
+div.call-controls.dark-mode > div.call-actions > button.drop {
+    background-color: hsl(0, 100%, 30%);
+}
+div.call-controls.dark-mode > div.call-actions > button.drop:hover {
+    background-color: hsl(0, 100%, 40%);
+}
+
+div.call-controls.dark-mode > div.call-actions > button.mute-toggle.unmuted {
+    background-color: hsl(132, 100%, 15%);
+}
+div.call-controls.dark-mode > div.call-actions > button.mute-toggle.unmuted:hover {
+    background-color: hsl(132, 100%, 25%);
+}
+
+div.call-controls.dark-mode > div.call-actions > button.mute-toggle.muted {
+    background-color: hsl(0, 100%, 30%);
+}
+div.call-controls.dark-mode > div.call-actions > button.mute-toggle.muted:hover {
     background-color: hsl(0, 100%, 40%);
 }
