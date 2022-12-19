@@ -38,9 +38,29 @@
                         </div>
                     </div>
                     <p>
+                        The following button is provided by a <a href="https://developer.mozilla.org/en-US/docs/Web/Web_Components" target="_blank">Web Component</a>.
+                        It receives all the necessary information, in order to make a SIP call using <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API" target="_blank">WebRTC</a>, from the form above.
+                        Attributes and lifecycle events on the Web Component allow for customization of the displayed controls during the call.
+                    </p>
+                    <p>
+                        Have a look at the <a href="https://github.com/VIER-CognitiveVoice/reference-webrtc-client" target="_blank">Source Code on GitHub</a> and
+                        specifically the files <a href="https://github.com/VIER-CognitiveVoice/reference-webrtc-client/blob/master/index.html" target="_blank"><code>index.html</code></a>,
+                        <a href="https://github.com/VIER-CognitiveVoice/reference-webrtc-client/blob/master/index.css" target="_blank"><code>index.css</code></a> and
+                        <a href="https://github.com/VIER-CognitiveVoice/reference-webrtc-client/blob/master/src/example.ts" target="_blank"><code>example.ts</code></a>.
+                    </p>
+                    <p>
+                        If you don't have the information necessary to fill out the form and start a call, don't hesitate to get in touch
+                        with our support at <a href="mailto:support@vier.au">support@vier.ai</a>.
+                    </p>
+                    <p>
+                        In case of technical issues with this application please report issues
+                        <a href="https://github.com/VIER-CognitiveVoice/reference-webrtc-client/issues" target="_blank">on GitHub</a>.
+                        Contributions through <a href="https://github.com/VIER-CognitiveVoice/reference-webrtc-client/pulls" target="_blank">Pull Requests</a> are welcome!
+                    </p>
+                    <div>
                         <input type="submit" hidden />
                         <cvg-webrtc-button volume-dtmf="0.03"><span>Call</span></cvg-webrtc-button>
-                    </p>
+                    </div>
                 </form>
             </section>
         </main>

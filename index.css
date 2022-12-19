@@ -2,11 +2,22 @@ html, body {
     margin: 0;
     padding: 0;
     font-family: Verdana, sans-serif;
+    font-size: 20px;
+    background-color: hsl(0, 0%, 93%);
 }
 
 body > main {
-    width: 80%;
+    width: 500px;
     margin: auto;
+}
+
+a {
+    text-decoration: none;
+}
+
+input[type=text], input[type=tel] {
+    display: block;
+    width: 100%;
 }
 
 span#connect {
@@ -15,8 +26,7 @@ span#connect {
 
 cvg-webrtc-button > svg {
     display: block;
-    width: fit-content;
-    height: 15px;
+    height: 25px;
 }
 
 cvg-webrtc-button::part(trigger) {
@@ -24,7 +34,7 @@ cvg-webrtc-button::part(trigger) {
     color: hsl(0, 0%, 80%);
     fill: hsl(0, 0%, 80%);
     background-color: hsl(120, 100%, 15%);
-    padding: 5px 10px;
+    padding: 10px 20px;
     border-radius: 4px;
 }
 cvg-webrtc-button::part(trigger-enabled):hover {

@@ -109,7 +109,6 @@ div.call-controls > div.call-actions > button {
 
 div.call-controls > div.call-actions > button > * {
     display: block;
-    width: fit-content;
     height: 16px;
     margin: auto;
 }
