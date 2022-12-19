@@ -20,6 +20,15 @@ input[type=text], input[type=tel] {
     width: 100%;
 }
 
+div.form-field {
+    margin-bottom: 10px;
+}
+
+div#call-button {
+    margin-top: 50px;
+    text-align: center;
+}
+
 span#connect {
     position: relative;
 }

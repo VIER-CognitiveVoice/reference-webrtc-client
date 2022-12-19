@@ -13,7 +13,7 @@
             <h1>Cognitive Voice Gateway - WebRTC Reference Client</h1>
             <section>
                 <form>
-                    <div>
+                    <div class="form-field">
                         <div>
                             <label for="environment">Environment</label>
                         </div>
@@ -21,7 +21,7 @@
                             <input id="environment" name="environment" type="text">
                         </div>
                     </div>
-                    <div>
+                    <div class="form-field">
                         <div>
                             <label for="reseller-token">Reseller Token</label>
                         </div>
@@ -29,7 +29,7 @@
                             <input id="reseller-token" name="reseller-token" type="text">
                         </div>
                     </div>
-                    <div>
+                    <div class="form-field">
                         <div>
                             <label for="destination">Destination</label>
                         </div>
@@ -57,7 +57,7 @@
                         <a href="https://github.com/VIER-CognitiveVoice/reference-webrtc-client/issues" target="_blank">on GitHub</a>.
                         Contributions through <a href="https://github.com/VIER-CognitiveVoice/reference-webrtc-client/pulls" target="_blank">Pull Requests</a> are welcome!
                     </p>
-                    <div>
+                    <div id="call-button">
                         <input type="submit" hidden />
                         <cvg-webrtc-button volume-dtmf="0.03"><span>Call</span></cvg-webrtc-button>
                     </div>
