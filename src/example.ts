@@ -1,5 +1,6 @@
 import {
   AttributeValidationFailedEvent,
+  CallEndedEvent,
   CvgWebRtcButton,
   ELEMENT_NAME,
 } from './custom-element'
@@ -29,8 +30,12 @@ window.addEventListener('DOMContentLoaded', () => {
     connectButton.innerHTML = images.endCall
   })
 
-  connectButton.addEventListener('call_ended', () => {
+  connectButton.addEventListener('call_ended', (e: CallEndedEvent) => {
     connectButton.innerHTML = images.newCall
+    if (e.detail !== undefined) {
+      window.alert('The call failed to establish, check the browser console for details!')
+      console.error('call failed', e.detail)
+    }
   })
 
   connectButton.addEventListener('attribute_validation_failed', (e: AttributeValidationFailedEvent) => {
