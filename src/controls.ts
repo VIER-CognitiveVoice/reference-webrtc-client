@@ -1,7 +1,9 @@
 import {
   CallApi,
+  DEFAULT_ICE_GATHERING_TIMEOUT,
   DtmfTone,
   fetchWebRtcAuthDetails,
+  HeaderList,
   setupSipClient,
   Tone,
   ToneMap,
@@ -62,6 +64,7 @@ export const DEFAULT_TIMEOUT = 10000
 export interface TimeoutOptions {
   register?: number
   invite?: number
+  iceGatheringTimeout?: number
 }
 
 export interface AudioOptions {
@@ -88,11 +91,16 @@ export interface UiOptions {
   position?: UiPosition
 }
 
+export interface TelephonyOptions {
+  sipHeaders?: HeaderList
+}
+
 export interface CallControlOptions {
   audio?: AudioOptions
   volume?: VolumeOptions
   timeout?: TimeoutOptions
   ui?: UiOptions
+  telephony?: TelephonyOptions
 }
 
 export type CleanupFunction = () => void
@@ -409,7 +417,10 @@ export function triggerControls(environment: string, resellerToken: string, dest
     fetchWebRtcAuthDetails(environment, resellerToken)
       .then(details => setupSipClient(details, options?.timeout?.register ?? DEFAULT_TIMEOUT))
       .then(telephony => {
-        return telephony.call(destination, options?.timeout?.invite ?? DEFAULT_TIMEOUT)
+        const callTimeout = options?.timeout?.invite ?? DEFAULT_TIMEOUT
+        const iceGatheringTimeout = options?.timeout?.iceGatheringTimeout ?? DEFAULT_ICE_GATHERING_TIMEOUT
+        const headers = options?.telephony?.sipHeaders
+        return telephony.call(destination, callTimeout, iceGatheringTimeout, headers)
           .then(call => {
             const [, controlsCleanup] = generateCallControls(call, options)
             call.callCompletion.then(() => {

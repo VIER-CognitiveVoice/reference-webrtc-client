@@ -42,7 +42,7 @@ export async function fetchWebRtcAuthDetails(environment: string, resellerToken:
 export type HeaderList = Array<[string, string]>
 
 export interface TelephonyApi {
-  call(target: string, timeout: number, extraHeaders?: HeaderList): Promise<CallApi>
+  call(target: string, timeout: number, iceGatheringTimeout: number, extraHeaders?: HeaderList): Promise<CallApi>
 
   disconnect(): void
 }
@@ -149,7 +149,7 @@ export interface CallApi {
   drop(): void
 }
 
-async function setupRegisteredUserAgent(authDetails: WebRtcAuthenticationDetails, signal: AbortSignal): Promise<UA> {
+async function setupRegisteredUserAgent(authDetails: WebRtcAuthenticationDetails, abortSignal: AbortSignal): Promise<UA> {
   const configuration: UAConfiguration = {
     sockets: authDetails.websocketUris.map(uri => new WebSocketInterface(uri.toString())),
     uri: authDetails.sipAddress,
@@ -194,20 +194,20 @@ async function setupRegisteredUserAgent(authDetails: WebRtcAuthenticationDetails
 
     ua.start()
 
-    signal.addEventListener('abort', (e) => {
-      rejectUserAgent(e)
+    abortSignal.addEventListener('abort', () => {
+      rejectUserAgent(abortSignal.reason)
     }, { once: true })
   })
 }
 
-function awaitRtcSession(userAgent: UA, cancel: AbortSignal): Promise<RTCSession> {
+function awaitRtcSession(userAgent: UA, abortSignal: AbortSignal): Promise<RTCSession> {
   return new Promise((resolve, reject) => {
-    cancel.addEventListener('cancel', reject, { once: true })
+    abortSignal.addEventListener('cancel', reject, { once: true })
     userAgent.once('newRTCSession', (e: IncomingRTCSessionEvent) => {
       console.log('RTCSession received', e)
-      cancel.removeEventListener('cancel', reject)
-      if (cancel.aborted) {
-        reject(cancel.reason)
+      abortSignal.removeEventListener('cancel', reject)
+      if (abortSignal.aborted) {
+        reject(abortSignal.reason)
       } else {
         resolve(e.session)
       }
@@ -220,7 +220,8 @@ function setupSessionAndMedia(
   authDetails: WebRtcAuthenticationDetails,
   target: string,
   extraSipHeaders: HeaderList,
-  abort: AbortSignal,
+  iceGatheringTimeout: number,
+  abortSignal: AbortSignal,
 ): Promise<[RTCSession, MediaStream]> {
 
   const callOptions: CallOptions = {
@@ -237,14 +238,19 @@ function setupSessionAndMedia(
     },
   }
 
-  const rtcSessionPromise = awaitRtcSession(userAgent, abort)
+  const rtcSessionPromise = awaitRtcSession(userAgent, abortSignal)
   userAgent.call(target, callOptions)
   return rtcSessionPromise.then((session) => {
     let resolved: boolean = false
 
     return new Promise((resolve, reject) => {
+      let iceReadyTimeout: number | null = null
       session.on('icecandidate', (e) => {
-        e.ready()
+        if (iceReadyTimeout !== null) {
+          window.clearTimeout(iceReadyTimeout)
+        }
+        console.log('icecanidate', e.candidate)
+        iceReadyTimeout = window.setTimeout(() => e.ready(), iceGatheringTimeout)
       })
 
       session.once('confirmed', function (e) {
@@ -267,10 +273,20 @@ function setupSessionAndMedia(
           return
         }
         console.log('Session failed!', e)
-        reject(e)
+        if (abortSignal.aborted) {
+          reject(abortSignal.reason)
+        } else {
+          reject(e)
+        }
       })
     })
   })
+}
+
+export interface CallCreationTimedOut {
+  type: 'call-creation-timeout'
+  sipAddress: string
+  timeout: number
 }
 
 async function setupCall(
@@ -279,11 +295,20 @@ async function setupCall(
   target: string,
   timeout: number,
   extraHeaders: HeaderList,
+  iceGatheringTimeout: number,
 ): Promise<CallApi> {
-  const abort = new AbortController()
-  const timeoutId = window.setTimeout(() => {
-    abort.abort()
+  const callAbortController = new AbortController()
+  callAbortController.signal.addEventListener('abort', () => {
     userAgent.terminateSessions()
+  }, { once: true })
+
+  const timeoutId = window.setTimeout(() => {
+    const error: CallCreationTimedOut = {
+      type: 'call-creation-timeout',
+      sipAddress: authDetails.sipAddress,
+      timeout: timeout,
+    }
+    callAbortController.abort(error)
   }, timeout)
 
   function clearConnectionTimeout() {
@@ -302,7 +327,8 @@ async function setupCall(
     authDetails,
     target,
     extraHeaders,
-    abort.signal,
+    iceGatheringTimeout,
+    callAbortController.signal,
   )
   clearConnectionTimeout()
 
@@ -334,17 +360,37 @@ async function setupCall(
   }
 }
 
+export interface UserAgentCreationTimedOut {
+  type: 'user-agent-creation-timeout'
+  sipAddress: string
+  timeout: number
+}
+
+export const DEFAULT_ICE_GATHERING_TIMEOUT = 250
+
 export async function setupSipClient(authDetails: WebRtcAuthenticationDetails, timeout: number): Promise<TelephonyApi> {
-  const abortController = new AbortController()
+  const userAgentAbortController = new AbortController()
   const timeoutId = setTimeout(() => {
-    abortController.abort()
+    const error: UserAgentCreationTimedOut = {
+      type: 'user-agent-creation-timeout',
+      sipAddress: authDetails.sipAddress,
+      timeout
+    }
+    userAgentAbortController.abort(error)
   }, timeout)
-  const ua = await setupRegisteredUserAgent(authDetails, abortController.signal)
+  const ua = await setupRegisteredUserAgent(authDetails, userAgentAbortController.signal)
   clearTimeout(timeoutId)
 
   return {
-    async call(target: string, timeout, extraHeaders): Promise<CallApi> {
-      return setupCall(ua, authDetails, target, timeout, extraHeaders ?? [])
+    async call(target: string, timeout, iceGatheringTimeout, extraHeaders): Promise<CallApi> {
+      return setupCall(
+        ua,
+        authDetails,
+        target,
+        timeout,
+        extraHeaders ?? [],
+        iceGatheringTimeout,
+      )
     },
     disconnect() {
       ua.stop()
