@@ -1,4 +1,5 @@
 import {
+  AttributeValidationFailedEvent,
   CvgWebRtcButton,
   ELEMENT_NAME,
 } from './custom-element'
@@ -30,6 +31,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
   connectButton.addEventListener('call_ended', () => {
     connectButton.innerHTML = images.newCall
+  })
+
+  connectButton.addEventListener('attribute_validation_failed', (e: AttributeValidationFailedEvent) => {
+    switch (e.detail.attributeName) {
+      case 'reseller-token':
+        window.alert('You have to provide a reseller token in the form above!')
+        break;
+      case 'destination':
+        window.alert('You have to provide a call destination token in the form above!')
+        break;
+    }
   })
 
   form.querySelectorAll<HTMLInputElement>('input[name]').forEach(element => {

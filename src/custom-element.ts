@@ -14,6 +14,12 @@ const TRIGGER_BUTTON_PART = 'trigger'
 const TRIGGER_BUTTON_ENABLED_PART = `${TRIGGER_BUTTON_PART}-enabled`
 const TRIGGER_BUTTON_DISABLED_PART = `${TRIGGER_BUTTON_PART}-disabled`
 
+export interface CvgWebRtcButtonEventMap extends HTMLElementEventMap {
+  new_call: NewCallEvent
+  call_ended: CallEndedEvent
+  attribute_validation_failed: AttributeValidationFailedEvent
+}
+
 export class CvgWebRtcButton extends HTMLElement {
 
   private currentCall: CallApi | undefined = undefined
@@ -74,10 +80,12 @@ export class CvgWebRtcButton extends HTMLElement {
     const resellerToken = this.getAttribute('reseller-token')
     if (!resellerToken) {
       console.error('No reseller-token given!')
+      this.dispatchEvent(new AttributeValidationFailedEvent('reseller-token', 'missing'))
       return
     }
     const destination = this.getAttribute('destination')
     if (!destination) {
+      this.dispatchEvent(new AttributeValidationFailedEvent('destination', 'missing'))
       console.error('No destination given!')
       return
     }
@@ -186,13 +194,21 @@ export class CvgWebRtcButton extends HTMLElement {
     }
   }
 
+  addEventListener<K extends keyof CvgWebRtcButtonEventMap>(type: K, listener: (this: HTMLElement, ev: CvgWebRtcButtonEventMap[K]) => any, options?: boolean | AddEventListenerOptions) {
+    super.addEventListener(type, listener as EventListenerOrEventListenerObject, options);
+  }
+
+  removeEventListener<K extends keyof CvgWebRtcButtonEventMap>(type: K, listener: (this: HTMLElement, ev: CvgWebRtcButtonEventMap[K]) => any, options?: boolean | EventListenerOptions) {
+    super.removeEventListener(type, listener as EventListenerOrEventListenerObject, options);
+  }
+
   trigger() {
     this.onButtonClicked()
   }
 }
 
 export class CallEvent<T> extends CustomEvent<T> {
-  constructor(type: string, detail?: T) {
+  constructor(type: keyof CvgWebRtcButtonEventMap, detail?: T) {
     super(type, {
       bubbles: false,
       cancelable: false,
@@ -210,5 +226,19 @@ export class NewCallEvent extends CallEvent<void> {
 export class CallEndedEvent extends CallEvent<void> {
   constructor() {
     super('call_ended')
+  }
+}
+
+export type AttributeName = 'reseller-token' | 'destination'
+export type ValidationError = 'missing'
+
+export interface AttributeValidationError {
+  attributeName: AttributeName
+  error: ValidationError
+}
+
+export class AttributeValidationFailedEvent extends CallEvent<AttributeValidationError> {
+  constructor(attributeName: AttributeName, error: ValidationError) {
+    super('attribute_validation_failed', { attributeName, error })
   }
 }
