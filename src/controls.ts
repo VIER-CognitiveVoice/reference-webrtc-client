@@ -423,6 +423,9 @@ export function triggerControls(environment: string, resellerToken: string, dest
             reject(e)
           })
       })
+      .catch(e => {
+        reject(e)
+      })
   })
 }
 
