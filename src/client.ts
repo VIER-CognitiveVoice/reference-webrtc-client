@@ -9,6 +9,7 @@ import {
 } from 'jssip/lib/UA'
 import {
   EndEvent,
+  IceCandidateEvent,
   RTCSession,
 } from 'jssip/lib/RTCSession'
 
@@ -215,6 +216,57 @@ function awaitRtcSession(userAgent: UA, abortSignal: AbortSignal): Promise<RTCSe
   })
 }
 
+/**
+ * This function listens for RTCSession's first `icecandidate` to get access to the ready function.
+ * After that it listens to the `icecandidate` and `icegatheringstatechange` events
+ * on the RTCPeerConnection for logging purposes and to properly cancel the timeout.
+ *
+ * If the timeout is not properly cancelled, JsSIP might invoke its ICE gathering finish logic
+ * twice: https://github.com/versatica/JsSIP/pull/800
+ */
+function handleIceCandidateGathering(session: RTCSession, timeout: number): void {
+  const connection = session.connection
+
+  session.once('icecandidate', (e: IceCandidateEvent) => {
+    const acceptCandidates: VoidFunction = e.ready
+    let iceReadyTimeout: number | undefined = undefined
+
+    function logCandidate({ candidate }: { candidate: RTCIceCandidate | null }) {
+      if (candidate) {
+        console.log('ice candidate', candidate)
+      }
+    }
+
+    function clearReadyTimeout() {
+      if (iceReadyTimeout !== undefined) {
+        window.clearTimeout(iceReadyTimeout)
+        iceReadyTimeout = undefined
+      }
+    }
+
+    function resetReadyTimeout() {
+      clearReadyTimeout()
+      iceReadyTimeout = window.setTimeout(acceptCandidates, timeout)
+    }
+
+    function handleGatheringStateChange() {
+      if (connection.iceGatheringState == 'complete') {
+        clearReadyTimeout()
+        // we are not interested in future events after the first completion.
+        connection.removeEventListener('icegatheringstatechange', handleGatheringStateChange)
+      }
+    }
+    connection.addEventListener('icegatheringstatechange', handleGatheringStateChange)
+
+    connection.addEventListener('icecandidate', e => {
+      logCandidate(e)
+    })
+
+    logCandidate(e)
+    resetReadyTimeout()
+  })
+}
+
 function setupSessionAndMedia(
   userAgent: UA,
   authDetails: WebRtcAuthenticationDetails,
@@ -244,14 +296,7 @@ function setupSessionAndMedia(
     let resolved: boolean = false
 
     return new Promise((resolve, reject) => {
-      let iceReadyTimeout: number | null = null
-      session.on('icecandidate', (e) => {
-        if (iceReadyTimeout !== null) {
-          window.clearTimeout(iceReadyTimeout)
-        }
-        console.log('icecanidate', e.candidate)
-        iceReadyTimeout = window.setTimeout(() => e.ready(), iceGatheringTimeout)
-      })
+      handleIceCandidateGathering(session, iceGatheringTimeout)
 
       session.once('confirmed', function (e) {
         if (resolved) {
