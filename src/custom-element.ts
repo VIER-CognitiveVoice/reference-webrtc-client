@@ -174,7 +174,7 @@ export class CvgWebRtcButton extends HTMLElement {
         })
       }, (reason) => {
         setTriggerButtonEnabled(true)
-        this.dispatchEvent(new CallEndedEvent(reason))
+        this.dispatchEvent(new CallEndedEvent(null))
       })
   }
 
@@ -223,10 +223,11 @@ export class NewCallEvent extends CallEvent<void> {
 }
 
 export class CallEndedEvent extends CallEvent<any | undefined> {
-  constructor(error: any | undefined) {
-    if (error === null) {
-      error = undefined
+  constructor(error: any | undefined | null) {
+    if (error === undefined) {
+      error = null
     }
+    console.log('error', error)
     super('call_ended', error)
   }
 }

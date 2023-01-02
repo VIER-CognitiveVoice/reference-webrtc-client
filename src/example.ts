@@ -32,7 +32,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   connectButton.addEventListener('call_ended', (e: CallEndedEvent) => {
     connectButton.innerHTML = images.newCall
-    if (e.detail !== undefined) {
+    if (e.detail !== null) {
       window.alert('The call failed to establish, check the browser console for details!')
       console.error('call failed', e.detail)
     }
