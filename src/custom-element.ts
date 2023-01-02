@@ -222,7 +222,7 @@ export class NewCallEvent extends CallEvent<void> {
   }
 }
 
-export class CallEndedEvent extends CallEvent<any | undefined> {
+export class CallEndedEvent extends CallEvent<any | null> {
   constructor(error: any | undefined | null) {
     if (error === undefined) {
       error = null
