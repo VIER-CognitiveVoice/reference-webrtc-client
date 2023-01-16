@@ -324,7 +324,12 @@ function awaitMediaConnection(session: RTCSession, abortSignal: AbortSignal): Pr
     function onSignalingStateChanged() {
       const state = connection.signalingState
       console.log('RTC signaling state changed:', state)
-      if (state === 'stable') {
+    }
+
+    function onIceConnectionStateChange() {
+      const state = connection.iceConnectionState
+      console.log('ICE connection state changed:', state)
+      if (state === 'connected') {
         resolvePromise()
       }
     }
@@ -332,10 +337,12 @@ function awaitMediaConnection(session: RTCSession, abortSignal: AbortSignal): Pr
     connection.addEventListener('connectionstatechange', onConnectionStateChanged)
     connection.addEventListener('track', onTrack)
     connection.addEventListener('signalingstatechange', onSignalingStateChanged)
+    connection.addEventListener('iceconnectionstatechange', onIceConnectionStateChange)
     abortSignal.addEventListener('abort', () => {
       connection.removeEventListener('connectionstatechange', onConnectionStateChanged)
       connection.removeEventListener('track', onConnectionStateChanged)
       connection.removeEventListener('signalingstatechange', onSignalingStateChanged)
+      connection.removeEventListener('iceconnectionstatechange', onIceConnectionStateChange)
       if (!resolved) {
         reject(abortSignal.reason)
         resolved = true;
