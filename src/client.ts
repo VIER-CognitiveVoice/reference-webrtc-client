@@ -359,6 +359,13 @@ function setupSessionAndMedia(
   iceGatheringTimeout: number,
   abortSignal: AbortSignal,
 ): Promise<[RTCSession, MediaStream]> {
+  const iceServers: Array<RTCIceServer> = []
+  if (authDetails.stunUris.length > 0) {
+    iceServers.push({ urls: authDetails.stunUris })
+  }
+  if (authDetails.turnUris.length > 0) {
+    iceServers.push({ urls: authDetails.turnUris, username: authDetails.username, credential: authDetails.password })
+  }
   const callOptions: CallOptions = {
     extraHeaders: extraSipHeaders?.map(([name, value]) => `${name}: ${value}`),
     mediaConstraints: {
@@ -366,10 +373,7 @@ function setupSessionAndMedia(
       video: false,
     },
     pcConfig: {
-      iceServers: [
-        { urls: authDetails.stunUris },
-        { urls: authDetails.turnUris, username: authDetails.username, credential: authDetails.password },
-      ],
+      iceServers,
     },
   }
 
