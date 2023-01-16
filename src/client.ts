@@ -319,14 +319,23 @@ function awaitMediaConnection(session: RTCSession, abortSignal: AbortSignal): Pr
 
     function onTrack(e: RTCTrackEvent) {
       console.log('Received media track', e.track)
-      resolvePromise()
     }
 
-    connection.addEventListener('track', onTrack)
+    function onSignalingStateChanged() {
+      const state = connection.signalingState
+      console.log('RTC signaling state changed:', state)
+      if (state === 'stable') {
+        resolvePromise()
+      }
+    }
+
     connection.addEventListener('connectionstatechange', onConnectionStateChanged)
+    connection.addEventListener('track', onTrack)
+    connection.addEventListener('signalingstatechange', onSignalingStateChanged)
     abortSignal.addEventListener('abort', () => {
       connection.removeEventListener('connectionstatechange', onConnectionStateChanged)
       connection.removeEventListener('track', onConnectionStateChanged)
+      connection.removeEventListener('signalingstatechange', onSignalingStateChanged)
       if (!resolved) {
         reject(abortSignal.reason)
         resolved = true;
