@@ -267,6 +267,74 @@ function handleIceCandidateGathering(session: RTCSession, timeout: number): void
   })
 }
 
+function awaitSessionConfirmation(session: RTCSession, abortSignal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let resolved: boolean = false
+    session.once('confirmed', function (e) {
+      if (resolved) {
+        return
+      }
+      console.log('Session confirmed!', e)
+
+      resolve()
+    })
+
+    session.once('failed', (e: EndEvent) => {
+      if (resolved) {
+        return
+      }
+      console.log('Session failed!', e)
+      if (abortSignal.aborted) {
+        reject(abortSignal.reason)
+      } else {
+        reject(e)
+      }
+    })
+  })
+}
+
+function awaitMediaConnection(session: RTCSession, abortSignal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const connection = session.connection
+    let resolved: boolean = false
+
+    function resolvePromise() {
+      if (!resolved) {
+        resolved = true;
+        if (abortSignal.aborted) {
+          reject(abortSignal.reason)
+        } else {
+          resolve()
+        }
+      }
+    }
+
+    function onConnectionStateChanged() {
+      const state = connection.connectionState
+      console.log('RTC connection state changed:', state)
+      if (state === 'connected') {
+        resolvePromise()
+      }
+    }
+
+    function onTrack(e: RTCTrackEvent) {
+      console.log('Received media track', e.track)
+      resolvePromise()
+    }
+
+    connection.addEventListener('track', onTrack)
+    connection.addEventListener('connectionstatechange', onConnectionStateChanged)
+    abortSignal.addEventListener('abort', () => {
+      connection.removeEventListener('connectionstatechange', onConnectionStateChanged)
+      connection.removeEventListener('track', onConnectionStateChanged)
+      if (!resolved) {
+        reject(abortSignal.reason)
+        resolved = true;
+      }
+    }, { once: true })
+  })
+}
+
 function setupSessionAndMedia(
   userAgent: UA,
   authDetails: WebRtcAuthenticationDetails,
@@ -275,7 +343,6 @@ function setupSessionAndMedia(
   iceGatheringTimeout: number,
   abortSignal: AbortSignal,
 ): Promise<[RTCSession, MediaStream]> {
-
   const callOptions: CallOptions = {
     extraHeaders: extraSipHeaders?.map(([name, value]) => `${name}: ${value}`),
     mediaConstraints: {
@@ -293,37 +360,18 @@ function setupSessionAndMedia(
   const rtcSessionPromise = awaitRtcSession(userAgent, abortSignal)
   userAgent.call(target, callOptions)
   return rtcSessionPromise.then((session) => {
-    let resolved: boolean = false
+    handleIceCandidateGathering(session, iceGatheringTimeout)
+    const confirmationPromise = awaitSessionConfirmation(session, abortSignal)
+    const mediaPromise = awaitMediaConnection(session, abortSignal)
 
-    return new Promise((resolve, reject) => {
-      handleIceCandidateGathering(session, iceGatheringTimeout)
-
-      session.once('confirmed', function (e) {
-        if (resolved) {
-          return
+    return Promise.all([confirmationPromise, mediaPromise]).then(() => {
+      const mediaStream = new MediaStream()
+      for (let receiver of session.connection.getReceivers()) {
+        if (receiver.track.kind == 'audio') {
+          mediaStream.addTrack(receiver.track)
         }
-        const mediaStream = new MediaStream()
-        for (let receiver of session.connection.getReceivers()) {
-          if (receiver.track.kind == 'audio') {
-            mediaStream.addTrack(receiver.track)
-          }
-        }
-        console.log('Session confirmed!', e)
-
-        resolve([session, mediaStream])
-      })
-
-      session.once('failed', (e: EndEvent) => {
-        if (resolved) {
-          return
-        }
-        console.log('Session failed!', e)
-        if (abortSignal.aborted) {
-          reject(abortSignal.reason)
-        } else {
-          reject(e)
-        }
-      })
+      }
+      return [session, mediaStream]
     })
   })
 }
