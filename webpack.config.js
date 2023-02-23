@@ -4,8 +4,8 @@ module.exports = {
     mode: "development",
     devtool: "inline-source-map",
     entry: {
-        example: "./src/example.ts",
-        webcomponent: "./src/webcomponent.ts",
+        "web-call-example": "./src/web-call-example.ts",
+        "webcomponent": "./src/webcomponent.ts",
     },
     output: {
         path: path.resolve(__dirname, './dist'),
