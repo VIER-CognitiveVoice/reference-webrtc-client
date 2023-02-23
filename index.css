@@ -22,6 +22,7 @@ a {
 input[type=text], input[type=tel] {
     display: block;
     width: 100%;
+    box-sizing: border-box;
 }
 
 div.form-field {

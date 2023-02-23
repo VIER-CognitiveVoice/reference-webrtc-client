@@ -5,6 +5,7 @@ module.exports = {
     devtool: "inline-source-map",
     entry: {
         "web-call-example": "./src/web-call-example.ts",
+        "webaudio-example": "./src/webaudio-example.ts",
         "webcomponent": "./src/webcomponent.ts",
     },
     output: {

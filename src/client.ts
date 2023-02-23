@@ -375,6 +375,7 @@ function setupSessionAndMedia(
   }
   const callOptions: CallOptions = {
     extraHeaders: extraSipHeaders?.map(([name, value]) => `${name}: ${value}`),
+    mediaStream,
     mediaConstraints: {
       audio: true,
       video: false,
@@ -382,7 +383,6 @@ function setupSessionAndMedia(
     pcConfig: {
       iceServers,
     },
-    mediaStream,
   }
 
   const rtcSessionPromise = awaitRtcSession(userAgent, abortSignal)

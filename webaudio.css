@@ -1,0 +1,32 @@
+#audio-drop-zone {
+    user-select: none;
+    display: flex;
+    margin-top: 30px;
+    border: 1px dashed black;
+    aspect-ratio: 1 / 0.5;
+    align-items: center;
+    justify-content: center;
+}
+
+#audio-drop-zone:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+#audio-drop-zone > span {
+    transition: opacity 250ms ease;
+    opacity: 1.0;
+}
+
+#audio-drop-zone.dropping > span {
+    opacity: 0;
+}
+
+#files > div {
+    display: flex;
+    column-gap: 5px;
+    margin: 5px 0;
+}
+
+#files > div > div:last-child {
+    margin-left: auto;
+}

@@ -222,7 +222,7 @@ function dtmfPlayer(outputNode: AudioNode, inputIndex: number, volume: number): 
   }
 }
 
-function enableMediaStreamAudioInChrome(stream: MediaStream) {
+export function enableMediaStreamAudioInChrome(stream: MediaStream) {
   // yes, this object is indeed created, modified and discarded.
   // see: https://stackoverflow.com/questions/41784137/webrtc-doesnt-work-with-audiocontext
   // and: https://stackoverflow.com/questions/53325793/no-audio-from-webrct-stream-on-chrome-without-audio-tag
