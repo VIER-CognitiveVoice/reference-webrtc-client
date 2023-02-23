@@ -43,7 +43,13 @@ export async function fetchWebRtcAuthDetails(environment: string, resellerToken:
 export type HeaderList = Array<[string, string]>
 
 export interface TelephonyApi {
-  call(target: string, timeout: number, iceGatheringTimeout: number, extraHeaders?: HeaderList): Promise<CallApi>
+  call(
+    target: string,
+    timeout: number,
+    iceGatheringTimeout: number,
+    extraHeaders?: HeaderList,
+    mediaStream?: MediaStream,
+  ): Promise<CallApi>
 
   disconnect(): void
 }
@@ -358,6 +364,7 @@ function setupSessionAndMedia(
   extraSipHeaders: HeaderList,
   iceGatheringTimeout: number,
   abortSignal: AbortSignal,
+  mediaStream: MediaStream | undefined,
 ): Promise<[RTCSession, MediaStream]> {
   const iceServers: Array<RTCIceServer> = []
   if (authDetails.stunUris.length > 0) {
@@ -375,6 +382,7 @@ function setupSessionAndMedia(
     pcConfig: {
       iceServers,
     },
+    mediaStream,
   }
 
   const rtcSessionPromise = awaitRtcSession(userAgent, abortSignal)
@@ -409,6 +417,7 @@ async function setupCall(
   timeout: number,
   extraHeaders: HeaderList,
   iceGatheringTimeout: number,
+  mediaStream: MediaStream | undefined,
 ): Promise<CallApi> {
   const callAbortController = new AbortController()
   callAbortController.signal.addEventListener('abort', () => {
@@ -442,6 +451,7 @@ async function setupCall(
     extraHeaders,
     iceGatheringTimeout,
     callAbortController.signal,
+    mediaStream,
   )
   clearConnectionTimeout()
 
@@ -495,7 +505,7 @@ export async function setupSipClient(authDetails: WebRtcAuthenticationDetails, t
   clearTimeout(timeoutId)
 
   return {
-    async call(target: string, timeout, iceGatheringTimeout, extraHeaders): Promise<CallApi> {
+    async call(target, timeout, iceGatheringTimeout, extraHeaders, mediaStream): Promise<CallApi> {
       return setupCall(
         ua,
         authDetails,
@@ -503,6 +513,7 @@ export async function setupSipClient(authDetails: WebRtcAuthenticationDetails, t
         timeout,
         extraHeaders ?? [],
         iceGatheringTimeout,
+        mediaStream,
       )
     },
     disconnect() {
