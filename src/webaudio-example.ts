@@ -60,46 +60,50 @@ class DecodedAudioFile {
 }
 
 
-function startCall(environment: string, resellerToken: string, destination: string, audioContext: AudioContext, file: DecodedAudioFile) {
+function performCall(environment: string, resellerToken: string, destination: string, audioContext: AudioContext, file: DecodedAudioFile): Promise<DecodedAudioFile> {
   const audioGap = 2000
-  fetchWebRtcAuthDetails(environment, resellerToken)
-    .then(details => setupSipClient(details, DEFAULT_TIMEOUT))
-    .then(telephony => {
-      const headers: HeaderList = [
-        ["x-filename", file.name],
-        ["x-channel", `${file.channel}`],
-      ]
-      const localAudio = audioContext.createBufferSource()
-      localAudio.buffer = file.audio
-      const channelSplitter = audioContext.createChannelSplitter(localAudio.channelCount)
-      localAudio.connect(channelSplitter)
-      const virtualMic = audioContext.createMediaStreamDestination()
-      channelSplitter.connect(virtualMic, file.channel);
-      return telephony.call(destination, DEFAULT_TIMEOUT, DEFAULT_ICE_GATHERING_TIMEOUT, headers, virtualMic.stream)
-        .then(callApi => {
-          enableMediaStreamAudioInChrome(callApi.media)
-          const remoteAudio = audioContext.createMediaStreamSource(callApi.media)
-          remoteAudio.connect(audioContext.destination)
+  return new Promise((resolve, reject) => {
+    fetchWebRtcAuthDetails(environment, resellerToken)
+      .then(details => setupSipClient(details, DEFAULT_TIMEOUT))
+      .then(telephony => {
+        const headers: HeaderList = [
+          ["x-filename", file.name],
+          ["x-channel", `${file.channel}`],
+        ]
+        const localAudio = audioContext.createBufferSource()
+        localAudio.buffer = file.audio
+        const channelSplitter = audioContext.createChannelSplitter(localAudio.channelCount)
+        localAudio.connect(channelSplitter)
+        const virtualMic = audioContext.createMediaStreamDestination()
+        channelSplitter.connect(virtualMic, file.channel);
+        return telephony.call(destination, DEFAULT_TIMEOUT, DEFAULT_ICE_GATHERING_TIMEOUT, headers, virtualMic.stream)
+          .then(callApi => {
+            enableMediaStreamAudioInChrome(callApi.media)
+            const remoteAudio = audioContext.createMediaStreamSource(callApi.media)
+            remoteAudio.connect(audioContext.destination)
 
-          setTimeout(() => {
-            localAudio.addEventListener('ended', () => {
-              setTimeout(() => {
-                callApi.drop()
-              }, audioGap)
-            })
-            localAudio.start()
-          }, audioGap)
+            setTimeout(() => {
+              localAudio.addEventListener('ended', () => {
+                setTimeout(() => {
+                  callApi.drop()
+                }, audioGap)
+              })
+              localAudio.start()
+            }, audioGap)
 
-          callApi.media
-        })
-        .catch(e => {
-          console.error('call failed', e)
-          telephony.disconnect()
-        })
-    })
-    .catch(e => {
-      console.error('SIP setup failed', e)
-    })
+            callApi.callCompletion.then(() => resolve(file), reject)
+          })
+          .catch(e => {
+            console.error('call failed', e)
+            telephony.disconnect()
+            reject(e)
+          })
+      })
+      .catch(e => {
+        console.error('SIP setup failed', e)
+        reject(e)
+      })
+  })
 }
 
 function filesDropped(files: FileList): Promise<Array<DroppedAudioFile>> {
@@ -245,7 +249,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     Promise.all(decodedAudioPromises).then(audioFiles => {
       for (let audioFile of audioFiles) {
-        startCall(environment, resellerToken, destination, audioContext, audioFile)
+        performCall(environment, resellerToken, destination, audioContext, audioFile)
       }
     })
   })
