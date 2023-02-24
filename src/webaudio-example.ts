@@ -65,7 +65,10 @@ function startCall(environment: string, resellerToken: string, destination: stri
   fetchWebRtcAuthDetails(environment, resellerToken)
     .then(details => setupSipClient(details, DEFAULT_TIMEOUT))
     .then(telephony => {
-      const headers: HeaderList = [["x-filename", file.name]]
+      const headers: HeaderList = [
+        ["x-filename", file.name],
+        ["x-channel", `${file.channel}`],
+      ]
       const localAudio = audioContext.createBufferSource()
       localAudio.buffer = file.audio
       const channelSplitter = audioContext.createChannelSplitter(localAudio.channelCount)
