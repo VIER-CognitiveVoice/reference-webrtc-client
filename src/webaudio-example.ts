@@ -132,7 +132,7 @@ function filesDropped(files: FileList): Promise<Array<DroppedAudioFile>> {
   return Promise.all(gatheringFiles).then(arrays => arrays.reduce((a, b) => a.concat(b)))
 }
 
-function renderFile(container: HTMLDivElement, file: DroppedAudioFile) {
+function renderFile(container: HTMLDivElement, seq: number, file: DroppedAudioFile) {
   const div = document.createElement('div')
   div.classList.add('file')
 
@@ -192,7 +192,8 @@ window.addEventListener('DOMContentLoaded', () => {
   const startCallsButton = document.getElementById('start-calls')! as HTMLButtonElement
 
   const droppingClass = 'dropping'
-  const audioFiles: Map<string, DroppedAudioFile> = new Map<string, DroppedAudioFile>()
+  let fileSequenceNumber = 0
+  const audioFiles = new Map<number, DroppedAudioFile>()
 
   dropZone.addEventListener('dragover', () => {
     dropZone.classList.add(droppingClass)
@@ -210,12 +211,9 @@ window.addEventListener('DOMContentLoaded', () => {
       filesDropped(transfer.files).then(files => {
         console.log("gathered files", files)
         for (let file of files) {
-          if (audioFiles.has(file.hash)) {
-            console.warn(`Ignoring duplicated file ${file.name} (sha1: ${file.hash})`)
-            continue
-          }
-          audioFiles.set(file.hash, file)
-          renderFile(filesContainer, file)
+          const seq = fileSequenceNumber++
+          audioFiles.set(seq, file)
+          renderFile(filesContainer, seq, file)
         }
       })
     }
