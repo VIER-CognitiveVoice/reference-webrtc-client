@@ -40,7 +40,6 @@ class DecodedAudioFile {
   readonly hash: string
   readonly audio: AudioBuffer
 
-
   constructor(name: string, type: string, hash: string, audio: AudioBuffer) {
     this.name = name
     this.type = type
@@ -58,8 +57,10 @@ function startCall(environment: string, resellerToken: string, destination: stri
       const headers: HeaderList = [["x-filename", file.name]]
       const localAudio = audioContext.createBufferSource()
       localAudio.buffer = file.audio
+      const channelSplitter = audioContext.createChannelSplitter(localAudio.channelCount)
+      localAudio.connect(channelSplitter)
       const virtualMic = audioContext.createMediaStreamDestination()
-      localAudio.connect(virtualMic)
+      channelSplitter.connect(virtualMic, 0);
       return telephony.call(destination, DEFAULT_TIMEOUT, DEFAULT_ICE_GATHERING_TIMEOUT, headers, virtualMic.stream)
         .then(callApi => {
           enableMediaStreamAudioInChrome(callApi.media)
