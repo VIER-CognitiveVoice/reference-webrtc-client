@@ -57,6 +57,10 @@ class DecodedAudioFile {
     this.channel = channel
     this.audio = audio
   }
+
+  toString() {
+    return `DecodedAudioFile(name=${this.name}, type=${this.type}, hash=${this.hash}, channel=${this.channel}, audio=${this.audio.duration})`
+  }
 }
 
 
@@ -104,6 +108,53 @@ function performCall(environment: string, resellerToken: string, destination: st
         reject(e)
       })
   })
+}
+
+function performAllCalls(
+  environment: string,
+  resellerToken: string,
+  destination: string,
+  audioContext: AudioContext,
+  files: Array<DecodedAudioFile>,
+  maxParallelism: number,
+): Promise<[Array<DecodedAudioFile>, Array<[DecodedAudioFile, any]>]> {
+  const completed: Array<DecodedAudioFile> = []
+  const failed: Array<[DecodedAudioFile, any]> = []
+  const remainingFiles = [...files]
+
+  return new Promise((resolve) => {
+
+    function perform(file: DecodedAudioFile) {
+      console.info(`Performing call for: ${file.toString()}`)
+      performCall(environment, resellerToken, destination, audioContext, file)
+        .then(() => {
+          console.info(`Call completed for: ${file.toString()}`)
+          completed.push(file)
+          performNext()
+        })
+        .catch(e => {
+          console.info(`Call failed for: ${file.toString()}`, e)
+          failed.push([file, e])
+          performNext()
+        })
+    }
+
+    function performNext() {
+      if (remainingFiles.length > 0) {
+        const file = remainingFiles.pop()!
+        perform(file)
+      } else {
+        if (completed.length + failed.length == files.length) {
+          resolve([completed, failed])
+        }
+      }
+    }
+
+    for (let i = 0; i < Math.min(files.length, maxParallelism); ++i) {
+      performNext()
+    }
+  })
+
 }
 
 function filesDropped(files: FileList): Promise<Array<DroppedAudioFile>> {
@@ -247,11 +298,17 @@ window.addEventListener('DOMContentLoaded', () => {
     const resellerToken = localStorage.getItem("form.reseller-token")!!
     const destination = localStorage.getItem("form.destination")!!
 
-    Promise.all(decodedAudioPromises).then(audioFiles => {
-      for (let audioFile of audioFiles) {
-        performCall(environment, resellerToken, destination, audioContext, audioFile)
-      }
-    })
+    Promise.all(decodedAudioPromises)
+      .then(audioFiles => performAllCalls(environment, resellerToken, destination, audioContext, audioFiles, 5))
+      .then(([completed, failed]) => {
+        if (failed.length === 0) {
+          window.alert(`All ${completed.length} calls have been performed successfully!`)
+        } else if (completed.length === 0) {
+          window.alert(`All ${failed.length} calls failed!`)
+        } else {
+          window.alert(`All ${completed.length + failed.length} calls have been performed, but ${failed.length} failed!`)
+        }
+      })
   })
 
 })
