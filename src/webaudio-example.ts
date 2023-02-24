@@ -17,6 +17,7 @@ class DroppedAudioFile {
   readonly name: string
   readonly type: string
   readonly hash: string
+  channel: number
   readonly content: ArrayBuffer
 
 
@@ -24,12 +25,20 @@ class DroppedAudioFile {
     this.name = name
     this.type = type
     this.hash = hash
+    this.channel = 0
     this.content = content
   }
 
   decode(audioContext: AudioContext): Promise<DecodedAudioFile> {
     return audioContext.decodeAudioData(this.content).then(buf => {
-      return new DecodedAudioFile(this.name, this.type, this.hash, buf)
+      if (this.channel < 0) {
+        throw Error("Invalid channel selection! (negative)")
+      }
+      if (this.channel >= buf.numberOfChannels) {
+        alert(`File ${this.name} had channel ${this.channel} selected, but there are only ${buf.numberOfChannels} channels available!`)
+        throw Error("Invalid channel selection! (channel unavailable)")
+      }
+      return new DecodedAudioFile(this.name, this.type, this.hash, Math.floor(this.channel), buf)
     })
   }
 }
@@ -38,12 +47,14 @@ class DecodedAudioFile {
   readonly name: string
   readonly type: string
   readonly hash: string
+  readonly channel: number
   readonly audio: AudioBuffer
 
-  constructor(name: string, type: string, hash: string, audio: AudioBuffer) {
+  constructor(name: string, type: string, hash: string, channel: number, audio: AudioBuffer) {
     this.name = name
     this.type = type
     this.hash = hash
+    this.channel = channel
     this.audio = audio
   }
 }
@@ -60,7 +71,7 @@ function startCall(environment: string, resellerToken: string, destination: stri
       const channelSplitter = audioContext.createChannelSplitter(localAudio.channelCount)
       localAudio.connect(channelSplitter)
       const virtualMic = audioContext.createMediaStreamDestination()
-      channelSplitter.connect(virtualMic, 0);
+      channelSplitter.connect(virtualMic, file.channel);
       return telephony.call(destination, DEFAULT_TIMEOUT, DEFAULT_ICE_GATHERING_TIMEOUT, headers, virtualMic.stream)
         .then(callApi => {
           enableMediaStreamAudioInChrome(callApi.media)
@@ -124,19 +135,32 @@ function filesDropped(files: FileList): Promise<Array<DroppedAudioFile>> {
 function renderFile(container: HTMLDivElement, file: DroppedAudioFile) {
   const div = document.createElement('div')
   div.classList.add('file')
-  div.title = `sha1: ${file.hash}`
 
   const name = document.createElement('div')
   name.innerText = file.name
+  name.title = `sha1: ${file.hash}`
   div.appendChild(name)
 
-  const type = document.createElement('div')
-  type.innerText = file.type
-  div.appendChild(type)
-
-  const size = document.createElement('div')
-  size.innerText = `${file.content.byteLength} bytes`
-  div.appendChild(size)
+  const channelSelector = document.createElement('div')
+  channelSelector.classList.add('channel-selector')
+  const channelSelectorLabel = document.createElement('span')
+  channelSelectorLabel.innerText = 'CH'
+  channelSelectorLabel.title = 'Channel Selection'
+  channelSelector.appendChild(channelSelectorLabel)
+  const channelSelectorInput = document.createElement('input')
+  channelSelectorInput.type = 'number'
+  channelSelectorInput.min = '0'
+  channelSelectorInput.max = '100'
+  channelSelectorInput.step = '1'
+  channelSelectorInput.value = '0'
+  channelSelectorInput.addEventListener('change', () => {
+    const value = Number(channelSelectorInput.value)
+    if (!Number.isNaN(value)) {
+      file.channel = value
+    }
+  })
+  channelSelector.appendChild(channelSelectorInput)
+  div.appendChild(channelSelector)
 
   container.appendChild(div)
 }

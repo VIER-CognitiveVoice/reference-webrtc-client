@@ -30,3 +30,10 @@
 #files > div > div:last-child {
     margin-left: auto;
 }
+#files > div > div.channel-selector {
+    display: flex;
+}
+#files > div > div.channel-selector > input {
+    display: block;
+    width: 30px;
+}
