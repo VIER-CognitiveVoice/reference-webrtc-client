@@ -5,7 +5,8 @@ import {
   ELEMENT_NAME,
 } from './custom-element'
 import {
-  getAndDisplayEnvironment,
+  getAndDisplayEnvironmentFromQuery,
+  getCustomSipHeadersFromQuery,
   updateQueryParameter,
 } from './common-example'
 
@@ -53,7 +54,10 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   })
 
-  connectButton.setAttribute('environment', getAndDisplayEnvironment())
+  connectButton.setAttribute('environment', getAndDisplayEnvironmentFromQuery())
+  for (let [name, value] of getCustomSipHeadersFromQuery()) {
+    connectButton.setAttribute(name, value)
+  }
 
   form.querySelectorAll<HTMLInputElement>('input[name]').forEach(element => {
     const key = `form.${element.name}`

@@ -9,7 +9,8 @@ import {
   enableMediaStreamAudioInChrome,
 } from './controls'
 import {
-  getAndDisplayEnvironment,
+  getAndDisplayEnvironmentFromQuery,
+  getCustomSipHeadersFromQuery,
   updateQueryParameter,
 } from './common-example'
 
@@ -68,13 +69,21 @@ class DecodedAudioFile {
 }
 
 
-function performCall(environment: string, resellerToken: string, destination: string, audioContext: AudioContext, file: DecodedAudioFile): Promise<DecodedAudioFile> {
+function performCall(
+  environment: string,
+  resellerToken: string,
+  destination: string,
+  extraCustomSipHeaders: HeaderList,
+  audioContext: AudioContext,
+  file: DecodedAudioFile,
+): Promise<DecodedAudioFile> {
   const audioGap = 2000
   return new Promise((resolve, reject) => {
     fetchWebRtcAuthDetails(environment, resellerToken)
       .then(details => setupSipClient(details, DEFAULT_TIMEOUT))
       .then(telephony => {
         const headers: HeaderList = [
+          ...extraCustomSipHeaders,
           ["x-filename", file.name],
           ["x-channel", `${file.channel}`],
         ]
@@ -118,6 +127,7 @@ function performAllCalls(
   environment: string,
   resellerToken: string,
   destination: string,
+  extraCustomSipHeaders: HeaderList,
   audioContext: AudioContext,
   files: Array<DecodedAudioFile>,
   maxParallelism: number,
@@ -130,7 +140,7 @@ function performAllCalls(
 
     function perform(file: DecodedAudioFile) {
       console.info(`Performing call for: ${file.toString()}`)
-      performCall(environment, resellerToken, destination, audioContext, file)
+      performCall(environment, resellerToken, destination, extraCustomSipHeaders, audioContext, file)
         .then(() => {
           console.info(`Call completed for: ${file.toString()}`)
           completed.push(file)
@@ -232,7 +242,8 @@ window.addEventListener('dragover', preventDefault, false)
 window.addEventListener('drop', preventDefault, false)
 
 window.addEventListener('DOMContentLoaded', () => {
-  const environment = getAndDisplayEnvironment()
+  const environment = getAndDisplayEnvironmentFromQuery()
+  const customSipHeaders = getCustomSipHeadersFromQuery()
 
   const query = new URLSearchParams(location.search)
   document.querySelectorAll<HTMLInputElement>('input[name]').forEach(element => {
@@ -304,7 +315,17 @@ window.addEventListener('DOMContentLoaded', () => {
     const destination = document.querySelector<HTMLInputElement>("input#destination")!!.value
 
     Promise.all(decodedAudioPromises)
-      .then(audioFiles => performAllCalls(environment, resellerToken, destination, audioContext, audioFiles, 5))
+      .then(audioFiles => {
+        return performAllCalls(
+          environment,
+          resellerToken,
+          destination,
+          customSipHeaders,
+          audioContext,
+          audioFiles,
+          5,
+        )
+      })
       .then(([completed, failed]) => {
         if (failed.length === 0) {
           window.alert(`All ${completed.length} calls have been performed successfully!`)

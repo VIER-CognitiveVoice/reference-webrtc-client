@@ -5,7 +5,10 @@ import {
   triggerControls,
   UiPositionSide,
 } from './controls'
-import { CallApi } from './client'
+import {
+  CallApi,
+  HeaderList,
+} from './client'
 import css from './webcomponent.css'
 
 export const ELEMENT_NAME = 'cvg-webrtc-button'
@@ -69,6 +72,19 @@ export class CvgWebRtcButton extends HTMLElement {
       return def
     }
     return number
+  }
+
+  private getCustomSipHeadersFromAttributes(): HeaderList {
+    const attributesLength = this.attributes.length
+    const headerList: HeaderList = []
+    for (let i = 0; i < attributesLength; ++i) {
+      const attribute = this.attributes.item(i)
+      if (attribute && attribute.localName.toLowerCase().startsWith("x-")) {
+        headerList.push([attribute.localName, attribute.value])
+      }
+    }
+
+    return headerList
   }
 
   private onButtonClicked() {
@@ -149,6 +165,9 @@ export class CvgWebRtcButton extends HTMLElement {
       },
       volume: {
         dtmfVolume: Number(dtmfVolume)
+      },
+      telephony: {
+        sipHeaders: this.getCustomSipHeadersFromAttributes()
       }
     }
 
