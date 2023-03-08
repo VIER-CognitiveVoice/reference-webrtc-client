@@ -4,6 +4,7 @@ import {
   CvgWebRtcButton,
   ELEMENT_NAME,
 } from './custom-element'
+import { getEnvironment } from './common-example'
 
 const images = {
   // https://fontawesome.com/icons/phone?s=solid&f=classic
@@ -48,6 +49,8 @@ window.addEventListener('DOMContentLoaded', () => {
         break;
     }
   })
+
+  connectButton.setAttribute('environment', getEnvironment())
 
   form.querySelectorAll<HTMLInputElement>('input[name]').forEach(element => {
     const key = `form.${element.name}`

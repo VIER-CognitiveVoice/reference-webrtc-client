@@ -8,6 +8,7 @@ import {
   DEFAULT_TIMEOUT,
   enableMediaStreamAudioInChrome,
 } from './controls'
+import { getEnvironment } from './common-example'
 
 function preventDefault(e: Event): void {
   e.preventDefault()
@@ -228,6 +229,7 @@ window.addEventListener('dragover', preventDefault, false)
 window.addEventListener('drop', preventDefault, false)
 
 window.addEventListener('DOMContentLoaded', () => {
+  const environment = getEnvironment()
 
   const query = new URLSearchParams(location.search)
   document.querySelectorAll<HTMLInputElement>('input[name]').forEach(element => {
@@ -294,7 +296,6 @@ window.addEventListener('DOMContentLoaded', () => {
     audioFiles.clear()
     filesContainer.innerHTML = ''
 
-    const environment = localStorage.getItem("form.environment")!!
     const resellerToken = localStorage.getItem("form.reseller-token")!!
     const destination = localStorage.getItem("form.destination")!!
 
