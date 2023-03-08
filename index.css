@@ -4,6 +4,8 @@ html, body {
     font-family: Verdana, sans-serif;
     font-size: 20px;
     background-color: hsl(0, 0%, 93%);
+    height: 100%;
+    overflow: scroll;
 }
 
 body > main {

@@ -4,7 +4,10 @@ import {
   CvgWebRtcButton,
   ELEMENT_NAME,
 } from './custom-element'
-import { getEnvironment } from './common-example'
+import {
+  getAndDisplayEnvironment,
+  updateQueryParameter,
+} from './common-example'
 
 const images = {
   // https://fontawesome.com/icons/phone?s=solid&f=classic
@@ -50,7 +53,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   })
 
-  connectButton.setAttribute('environment', getEnvironment())
+  connectButton.setAttribute('environment', getAndDisplayEnvironment())
 
   form.querySelectorAll<HTMLInputElement>('input[name]').forEach(element => {
     const key = `form.${element.name}`
@@ -59,12 +62,13 @@ window.addEventListener('DOMContentLoaded', () => {
     element.addEventListener('change', () => {
       localStorage.setItem(key, element.value)
       connectButton.setAttribute(element.name, element.value)
+      updateQueryParameter(element.name, element.value)
     })
-    if (existingValue) {
-      element.value = existingValue
-    } else if (queryValue) {
+    if (queryValue) {
       element.value = queryValue
-      localStorage.setItem(key, queryValue)
+    } else if (existingValue) {
+      element.value = existingValue
+      updateQueryParameter(element.name, existingValue)
     }
     connectButton.setAttribute(element.name, element.value)
   })

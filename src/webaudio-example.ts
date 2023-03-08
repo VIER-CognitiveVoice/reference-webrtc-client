@@ -8,7 +8,10 @@ import {
   DEFAULT_TIMEOUT,
   enableMediaStreamAudioInChrome,
 } from './controls'
-import { getEnvironment } from './common-example'
+import {
+  getAndDisplayEnvironment,
+  updateQueryParameter,
+} from './common-example'
 
 function preventDefault(e: Event): void {
   e.preventDefault()
@@ -229,7 +232,7 @@ window.addEventListener('dragover', preventDefault, false)
 window.addEventListener('drop', preventDefault, false)
 
 window.addEventListener('DOMContentLoaded', () => {
-  const environment = getEnvironment()
+  const environment = getAndDisplayEnvironment()
 
   const query = new URLSearchParams(location.search)
   document.querySelectorAll<HTMLInputElement>('input[name]').forEach(element => {
@@ -238,12 +241,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const existingValue = localStorage.getItem(key)
     element.addEventListener('change', () => {
       localStorage.setItem(key, element.value)
+      updateQueryParameter(element.name, element.value)
     })
-    if (existingValue) {
-      element.value = existingValue
-    } else if (queryValue) {
+    if (queryValue) {
       element.value = queryValue
-      localStorage.setItem(key, queryValue)
+    } else if (existingValue) {
+      element.value = existingValue
+      updateQueryParameter(element.name, existingValue)
     }
   })
 
@@ -296,8 +300,8 @@ window.addEventListener('DOMContentLoaded', () => {
     audioFiles.clear()
     filesContainer.innerHTML = ''
 
-    const resellerToken = localStorage.getItem("form.reseller-token")!!
-    const destination = localStorage.getItem("form.destination")!!
+    const resellerToken = document.querySelector<HTMLInputElement>("input#reseller-token")!!.value
+    const destination = document.querySelector<HTMLInputElement>("input#destination")!!.value
 
     Promise.all(decodedAudioPromises)
       .then(audioFiles => performAllCalls(environment, resellerToken, destination, audioContext, audioFiles, 5))
