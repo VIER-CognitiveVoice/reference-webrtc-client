@@ -22,6 +22,17 @@ export interface WebRtcAuthenticationDetails {
   turnUris: Array<string>
 }
 
+/**
+ * This function requests new credentials needed for SIP proxy connections for the given environment and reseller.
+ *
+ * Note: Due to the authentication mechanism being used, each set of credentials can only be used for
+ *       a single successful call. After a call is successfully established, the credentials will be invalidated
+ *       and new credentials must be requested for additional calls.
+ *
+ * @param environment The base URL of the CVG environment. This will almost always be `https://cognitivevoice.io`
+ * @param resellerToken The reseller token identifying your CVG reseller. This token can be found in settings
+ *                      of the CVG project you want to call.
+ */
 export async function fetchWebRtcAuthDetails(environment: string, resellerToken: string): Promise<WebRtcAuthenticationDetails> {
   let request: RequestInit = {
     method: 'POST',
@@ -43,6 +54,30 @@ export async function fetchWebRtcAuthDetails(environment: string, resellerToken:
 export type HeaderList = Array<[string, string]>
 
 export interface TelephonyApi {
+  /**
+   * This method starts a new SIP call using the connected user agent.
+   *
+   * Note: Due to the authentication mechanism being used, each `TelephonyApi` instance can only be used for
+   *       a single successful call. After a call is successfully established, the credentials will be invalidated
+   *       and new credentials must be requested for additional calls.
+   *
+   * @param target The destination SIP address to be called. Since the user agent is only privileged to call
+   *               destinations local the SIP proxy, the local part of a SIP address is enough
+   *               (typically an E164 number).
+   * @param timeout This timeout (in milliseconds) is the maximum time it may take for the call to be fully established
+   *                (accepted by the remote party). The promise will be rejected with an object of
+   *                type `CallCreationTimedOut`.
+   * @param iceGatheringTimeout This timeout (in milliseconds) is the maximum time the client waits for a new
+   *                            ICE candidate to arrive during the ICE gathering stage. So given a timeout of 250ms,
+   *                            if 3 candidates after a 100ms delay each, then the ICE gathering will take ~550ms
+   *                            in total. The time taken by ICE gathering also counts towards the time it takes to
+   *                            establish the call, so this value should always be lower than `timeout`.
+   * @param extraHeaders This is an optional list of additional SIP headers that are sent as part of the INVITE message.
+   *                     Keep in mind that CVG will only forward custom headers (starting with `x-`) to bots.
+   *                     No additional headers are sent by default.
+   * @param mediaStream This is an optional media stream that can be supplied as the audio input to the call.
+   *                    By default, UserMedia is requested and used without modification.
+   */
   call(
     target: string,
     timeout: number,
@@ -51,6 +86,9 @@ export interface TelephonyApi {
     mediaStream?: MediaStream,
   ): Promise<CallApi>
 
+  /**
+   * This method disconnects the user agent from the SIP proxy.
+   */
   disconnect(): void
 }
 
@@ -491,6 +529,18 @@ export interface UserAgentCreationTimedOut {
 
 export const DEFAULT_ICE_GATHERING_TIMEOUT = 250
 
+/**
+ * This function takes the give webrtc authentication details and uses them to connect to the SIP proxy
+ * in order to allow SIP calling.
+ *
+ * Note: Due to the authentication mechanism being used, each `TelephonyApi` instance can only be used for
+ *       a single successful call. After a call is successfully established, the credentials will be invalidated
+ *       and new credentials must be requested for additional calls.
+ *
+ * @param authDetails The auth details as provided by `fetchWebRtcAuthDetails` used for authentication against the
+ *                    SIP proxy and TURN server.
+ * @param timeout The maximum time (in milliseconds) that the SIP proxy connect may take to establish.
+ */
 export async function setupSipClient(authDetails: WebRtcAuthenticationDetails, timeout: number): Promise<TelephonyApi> {
   const userAgentAbortController = new AbortController()
   const timeoutId = setTimeout(() => {
