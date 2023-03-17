@@ -7,6 +7,7 @@ import {
   setupSipClient,
   Tone,
   ToneMap,
+  UriArgumentList,
 } from './client'
 
 const images = {
@@ -93,6 +94,7 @@ export interface UiOptions {
 
 export interface TelephonyOptions {
   sipHeaders?: HeaderList
+  sipUriArguments?: UriArgumentList
 }
 
 export interface CallControlOptions {
@@ -415,7 +417,13 @@ export function generateCallControls(callApi: CallApi, options?: CallControlOpti
 export function triggerControls(environment: string, resellerToken: string, destination: string, options?: CallControlOptions): Promise<CallApi> {
   return new Promise((resolve, reject) => {
     fetchWebRtcAuthDetails(environment, resellerToken)
-      .then(details => setupSipClient(details, options?.timeout?.register ?? DEFAULT_TIMEOUT))
+      .then(details => {
+        const clientOptions = {
+          timeout: options?.timeout?.register,
+          sipUriArguments: options?.telephony?.sipUriArguments,
+        }
+        return setupSipClient(details, clientOptions)
+      })
       .then(telephony => {
         const callTimeout = options?.timeout?.invite ?? DEFAULT_TIMEOUT
         const iceGatheringTimeout = options?.timeout?.iceGatheringTimeout ?? DEFAULT_ICE_GATHERING_TIMEOUT

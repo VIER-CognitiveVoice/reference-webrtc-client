@@ -80,7 +80,7 @@ function performCall(
   const audioGap = 2000
   return new Promise((resolve, reject) => {
     fetchWebRtcAuthDetails(environment, resellerToken)
-      .then(details => setupSipClient(details, DEFAULT_TIMEOUT))
+      .then(details => setupSipClient(details))
       .then(telephony => {
         const headers: HeaderList = [
           ...extraCustomSipHeaders,

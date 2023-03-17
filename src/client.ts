@@ -52,6 +52,7 @@ export async function fetchWebRtcAuthDetails(environment: string, resellerToken:
 }
 
 export type HeaderList = Array<[string, string]>
+export type UriArgumentList = Array<[string, string | undefined]>
 
 export interface TelephonyApi {
   /**
@@ -194,10 +195,26 @@ export interface CallApi {
   drop(): void
 }
 
-async function setupRegisteredUserAgent(authDetails: WebRtcAuthenticationDetails, abortSignal: AbortSignal): Promise<UA> {
+function encodeUriArguments(args: UriArgumentList): string {
+  let output = ""
+  for (let [name, value] of args) {
+    if (value === undefined) {
+      output += `;${encodeURIComponent(name)}`
+    } else {
+      output += `;${encodeURIComponent(name)}=${encodeURIComponent(value)}`
+    }
+  }
+  return output
+}
+
+async function setupRegisteredUserAgent(
+  authDetails: WebRtcAuthenticationDetails,
+  uriArguments: UriArgumentList | undefined,
+  abortSignal: AbortSignal,
+): Promise<UA> {
   const configuration: UAConfiguration = {
     sockets: authDetails.websocketUris.map(uri => new WebSocketInterface(uri.toString())),
-    uri: authDetails.sipAddress,
+    uri: `${authDetails.sipAddress}${encodeUriArguments(uriArguments ?? [])}`,
     password: authDetails.password,
   }
 
@@ -528,6 +545,18 @@ export interface UserAgentCreationTimedOut {
 }
 
 export const DEFAULT_ICE_GATHERING_TIMEOUT = 250
+export const DEFAULT_REGISTRATION_TIMEOUT = 10000
+
+export interface SipClientOptions {
+  /**
+   * The maximum time (in milliseconds) that the SIP proxy connect may take to establish.
+   */
+  timeout?: number
+  /**
+   * A list of SIP URI arguments that are appended to the SIP URI given in the auth details
+   */
+  sipUriArguments?: UriArgumentList
+}
 
 /**
  * This function takes the give webrtc authentication details and uses them to connect to the SIP proxy
@@ -539,19 +568,23 @@ export const DEFAULT_ICE_GATHERING_TIMEOUT = 250
  *
  * @param authDetails The auth details as provided by `fetchWebRtcAuthDetails` used for authentication against the
  *                    SIP proxy and TURN server.
- * @param timeout The maximum time (in milliseconds) that the SIP proxy connect may take to establish.
+ * @param options This object allows customization of the resulting user agent as well as how it is created.
  */
-export async function setupSipClient(authDetails: WebRtcAuthenticationDetails, timeout: number): Promise<TelephonyApi> {
+export async function setupSipClient(
+  authDetails: WebRtcAuthenticationDetails,
+  options?: SipClientOptions,
+): Promise<TelephonyApi> {
   const userAgentAbortController = new AbortController()
+  const timeout = options?.timeout ?? DEFAULT_REGISTRATION_TIMEOUT
   const timeoutId = setTimeout(() => {
     const error: UserAgentCreationTimedOut = {
       type: 'user-agent-creation-timeout',
       sipAddress: authDetails.sipAddress,
-      timeout
+      timeout,
     }
     userAgentAbortController.abort(error)
   }, timeout)
-  const ua = await setupRegisteredUserAgent(authDetails, userAgentAbortController.signal)
+  const ua = await setupRegisteredUserAgent(authDetails, options?.sipUriArguments, userAgentAbortController.signal)
   clearTimeout(timeoutId)
 
   return {
