@@ -361,7 +361,7 @@ function awaitMediaConnection(session: RTCSession, abortSignal: AbortSignal): Pr
 
     function resolvePromise() {
       if (!resolved) {
-        resolved = true;
+        resolved = true
         if (abortSignal.aborted) {
           reject(abortSignal.reason)
         } else {
@@ -406,7 +406,7 @@ function awaitMediaConnection(session: RTCSession, abortSignal: AbortSignal): Pr
       connection.removeEventListener('iceconnectionstatechange', onIceConnectionStateChange)
       if (!resolved) {
         reject(abortSignal.reason)
-        resolved = true;
+        resolved = true
       }
     }, { once: true })
   })
