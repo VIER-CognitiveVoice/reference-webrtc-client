@@ -1,6 +1,9 @@
 div.button-container {
     display: inline-block;
     position: relative;
+}
+
+div.button-container button {
     cursor: pointer;
 }
 
