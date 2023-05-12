@@ -1,6 +1,7 @@
 div.button-container {
     display: inline-block;
     position: relative;
+    cursor: pointer;
 }
 
 div.call-controls {
