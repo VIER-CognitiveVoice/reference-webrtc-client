@@ -412,6 +412,162 @@ function awaitMediaConnection(session: RTCSession, abortSignal: AbortSignal): Pr
   })
 }
 
+type SdpOption = SdpMediaOption | SdpAttributeOption | SdpUnknownOption
+
+interface SdpMediaOption {
+  type: 'media',
+  raw: string,
+  name: string,
+  media: string,
+  port: string,
+  transport: string,
+  codecs: Array<string>,
+}
+
+interface SdpAttributeOption {
+  type: 'attribute',
+  raw: string,
+  name: string,
+  attribute: string,
+  value: string,
+}
+
+interface SdpUnknownOption {
+  type: 'unknown',
+  raw: string,
+  name: string,
+}
+
+function binarySplit(s: string, delimiter: string): Array<string> {
+  const index = s.indexOf(delimiter)
+  if (index === -1) {
+    return [s]
+  }
+  return [s.substring(0, index), s.substring(index + delimiter.length)]
+}
+
+function parseSdp(sdp: string): Array<SdpOption> {
+  return sdp.split("\r\n").filter(raw => raw.length > 0).map(raw => {
+    const name = raw.substring(0, 1)
+    const value = raw.substring(2)
+
+    switch (name) {
+      case 'm':
+        const mediaParts = value.split(' ')
+        return {
+          type: 'media',
+          raw: raw,
+          name: name,
+          media: mediaParts[0],
+          port: mediaParts[1],
+          transport: mediaParts[2],
+          codecs: mediaParts.slice(3),
+        }
+      case 'a':
+        const attributeParts = binarySplit(value, ':')
+        return {
+          type: 'attribute',
+          raw: raw,
+          name: name,
+          attribute: attributeParts[0],
+          value: attributeParts[1],
+        }
+      default:
+        return {
+          type: 'unknown',
+          raw: raw,
+          name: name,
+        }
+    }
+  })
+}
+
+function assembleSdp(options: Array<SdpOption>): string {
+  let sdp = ""
+
+  for (const option of options) {
+    switch (option.type) {
+      case 'unknown':
+        sdp += option.raw
+        break
+      case 'media':
+        sdp += option.name + "=" + option.media + " " + option.port + " " + option.transport + " " + option.codecs.join(" ")
+        break
+      case 'attribute':
+        sdp += option.name
+        sdp += "="
+        sdp += option.attribute
+        if (option.value) {
+          sdp += ":"
+          sdp += option.value
+        }
+        break
+    }
+    sdp += "\r\n"
+  }
+
+  return sdp
+}
+
+function filterCodecs(sdp: string, codecPredicate: (name: string, rawName: string) => boolean): string {
+  const sdpOptions = parseSdp(sdp)
+
+  const supportedCodecsIds: Array<string> = []
+  for (const option of sdpOptions) {
+    if (option.type == "attribute" && option.attribute == 'rtpmap') {
+      const parts = binarySplit(option.value, ' ')
+      const codecId = parts[0]
+      const rawCodecName = parts[1]
+      const codecParts = binarySplit(rawCodecName, "/")
+      const codecName = codecParts[0]
+      if (codecPredicate(codecName, rawCodecName)) {
+        supportedCodecsIds.push(codecId)
+      }
+    }
+  }
+
+  for (const option of sdpOptions) {
+    if (option.type == "media" && option.media == "audio") {
+      option.codecs = supportedCodecsIds
+    }
+  }
+
+  return assembleSdp(sdpOptions)
+}
+
+function munchSdp(muncher: (sdp: string) => string, description?: { type?: RTCSdpType | undefined, sdp?: string}) {
+  if (description && description.type === 'offer') {
+    console.log("Original Local Description: " + description.sdp)
+    if (description.sdp) {
+      description.sdp = muncher(description.sdp)
+      console.log("Local Description: " + description.sdp)
+    }
+  }
+}
+
+function interceptLocalDescription(session: RTCSession) {
+  const connection = session.connection
+  if (!connection) {
+    return
+  }
+
+  const desiredCodecs = ["opus", "red", "cn", "telephone-event"]
+  const muncher = (sdp: string) => filterCodecs(sdp, (name) => desiredCodecs.indexOf(name.toLowerCase()) !== -1)
+
+  const originalSetLocalDescription = connection.setLocalDescription.bind(connection)
+  connection.setLocalDescription = function(description?: RTCLocalSessionDescriptionInit) {
+    try {
+      munchSdp(muncher, description)
+    } catch (e) {
+      console.error("Error", e)
+      return Promise.reject(e)
+    }
+    return originalSetLocalDescription(description).catch(e => {
+      console.error("Error", e)
+    })
+  }
+}
+
 function setupSessionAndMedia(
   userAgent: UA,
   authDetails: WebRtcAuthenticationDetails,
@@ -443,6 +599,7 @@ function setupSessionAndMedia(
   const rtcSessionPromise = awaitRtcSession(userAgent, abortSignal)
   userAgent.call(target, callOptions)
   return rtcSessionPromise.then((session) => {
+    interceptLocalDescription(session)
     handleIceCandidateGathering(session, iceGatheringTimeout)
     const confirmationPromise = awaitSessionConfirmation(session, abortSignal)
     const mediaPromise = awaitMediaConnection(session, abortSignal)
