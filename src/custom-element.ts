@@ -190,7 +190,7 @@ export class CvgWebRtcButton extends HTMLElement {
     triggerControls(environment, resellerToken, destination, options)
       .then(async (callApi) => {
         this.currentCall = callApi
-        console.log('Call was accepted!', callApi)
+        this.dispatchEvent(new CallAcceptedEvent(callApi))
         callApi.callCompletion.then(() => {
           this.currentCall = undefined
           setTriggerButtonEnabled(true)
@@ -250,9 +250,9 @@ export interface CallAcceptedDetails {
   headers: HeaderList,
 }
 
-export class CallAcceptedEvent extends CallEvent<CallAcceptedDetails> {
-  constructor(headers: HeaderList) {
-    super('call_accepted', { headers })
+export class CallAcceptedEvent extends CallEvent<CallApi> {
+  constructor(call: CallApi) {
+    super('call_accepted', call)
   }
 }
 
