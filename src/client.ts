@@ -10,6 +10,7 @@ import {
 import {
   EndEvent,
   IceCandidateEvent,
+  OutgoingEvent,
   RTCSession,
 } from 'jssip/lib/RTCSession'
 
@@ -208,6 +209,7 @@ export const ToneMap: { [key: string]: DtmfTone } = {
 export interface CallApi {
   readonly media: MediaStream
   readonly callCompletion: Promise<void>
+  readonly acceptHeaders: HeaderList
 
   sendTone(tone: Tone): void
   setMicrophoneMuted(mute: boolean): void
@@ -585,13 +587,16 @@ function filterCodecs(predicate: (name: string) => boolean): (sdp: string) => st
   }
 }
 
+type JsSipMessageHeaderValue = {raw: string}
+type JsSipMessageHeaders = {[name: string]: ReadonlyArray<JsSipMessageHeaderValue>}
+
 async function setupSessionAndMedia(
   userAgent: UA,
   authDetails: WebRtcAuthenticationDetails,
   target: string,
   abortSignal: AbortSignal,
   options: CreateCallOptions,
-): Promise<[RTCSession, MediaStream]> {
+): Promise<[RTCSession, MediaStream, HeaderList]> {
   const iceServers: Array<RTCIceServer> = []
   if (authDetails.stunUris.length > 0) {
     iceServers.push({ urls: authDetails.stunUris })
@@ -614,23 +619,40 @@ async function setupSessionAndMedia(
   const rtcSessionPromise = awaitRtcSession(userAgent, abortSignal)
   userAgent.call(target, callOptions)
   const session = await rtcSessionPromise
+  const acceptHeadersPromise: Promise<HeaderList> = new Promise((resolve) => {
+    let acceptTimeout = window.setTimeout(() => resolve([]), options.timeout)
 
-  const codecFilter = options.codecFilter
-  if (codecFilter !== undefined) {
-    interceptLocalDescription(session, filterCodecs(codecFilter))
+    session.once('accepted', (event: OutgoingEvent) => {
+      window.clearTimeout(acceptTimeout)
+      const response = event.response as any as {headers: JsSipMessageHeaders}
+      const headers: HeaderList = []
+      for (const headerName in response.headers) {
+        if (response.headers.hasOwnProperty(headerName)) {
+          for (const value of response.headers[headerName]) {
+            headers.push([headerName, value.raw])
+          }
+        }
+      }
+
+      resolve(headers)
+    })
+  })
+
+  if (options.codecFilter) {
+    interceptLocalDescription(session, filterCodecs(options.codecFilter))
   }
   handleIceCandidateGathering(session, options.iceGatheringTimeout)
   const confirmationPromise = awaitSessionConfirmation(session, abortSignal)
   const mediaPromise = awaitMediaConnection(session, abortSignal)
 
-  return Promise.all([confirmationPromise, mediaPromise]).then(() => {
+  return Promise.all([confirmationPromise, mediaPromise, acceptHeadersPromise]).then(([,, acceptHeaders]) => {
     const mediaStream = new MediaStream()
     for (let receiver of session.connection.getReceivers()) {
       if (receiver.track.kind == 'audio') {
         mediaStream.addTrack(receiver.track)
       }
     }
-    return [session, mediaStream]
+    return [session, mediaStream, acceptHeaders]
   })
 }
 
@@ -671,7 +693,7 @@ async function setupCall(
     completeCall = resolve
   })
 
-  const [session, mediaTrack] = await setupSessionAndMedia(
+  const [session, mediaTrack, acceptHeaders] = await setupSessionAndMedia(
     userAgent,
     authDetails,
     target,
@@ -688,6 +710,7 @@ async function setupCall(
   return {
     media: mediaTrack,
     callCompletion: callCompletedPromise,
+    acceptHeaders: acceptHeaders,
     sendTone(tone: Tone) {
       session.sendDTMF(tone)
     },
@@ -796,7 +819,7 @@ export async function setupSipClient(
     userAgentAbortController.abort(error)
   }, timeout)
   const ua = await setupRegisteredUserAgent(authDetails, options?.sipUriArguments, userAgentAbortController.signal)
-  clearTimeout(timeoutId)
+  window.clearTimeout(timeoutId)
 
   return {
     async call(target, timeout, iceGatheringTimeout, extraHeaders, mediaStream): Promise<CallApi> {
