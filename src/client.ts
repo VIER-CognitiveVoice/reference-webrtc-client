@@ -531,10 +531,8 @@ function assembleSdp(options: Array<SdpOption>): string {
 
 function munchSdp(muncher: (sdp: string) => string, description?: { type?: RTCSdpType | undefined, sdp?: string}) {
   if (description && description.type === 'offer') {
-    console.log("Original Local Description: " + description.sdp)
     if (description.sdp) {
       description.sdp = muncher(description.sdp)
-      console.log("Local Description: " + description.sdp)
     }
   }
 }
