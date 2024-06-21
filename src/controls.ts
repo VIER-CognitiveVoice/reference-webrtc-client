@@ -440,14 +440,6 @@ export function triggerControls(environment: string, resellerToken: string, dest
         }
         return telephony.createCall(destination, createCallOptions)
           .then(call => {
-            console.log("Headers received from accept:", call.acceptHeaders)
-            const dialogIds = call.acceptHeaders
-              .filter(([name,]) => name.toLowerCase() == "x-cvg-dialogid")
-              .map(([, value]) => value)
-            if (dialogIds.length > 0) {
-              console.log(`DialogId: ${dialogIds[0]}`)
-            }
-
             const [, controlsCleanup] = generateCallControls(call, options)
             call.callCompletion.then(() => {
               controlsCleanup()

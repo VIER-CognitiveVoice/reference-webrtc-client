@@ -19,6 +19,7 @@ const TRIGGER_BUTTON_DISABLED_PART = `${TRIGGER_BUTTON_PART}-disabled`
 
 export interface CvgWebRtcButtonEventMap extends HTMLElementEventMap {
   new_call: NewCallEvent
+  call_accepted: CallAcceptedEvent
   call_ended: CallEndedEvent
   attribute_validation_failed: AttributeValidationFailedEvent
 }
@@ -242,6 +243,16 @@ export class CallEvent<T> extends CustomEvent<T> {
 export class NewCallEvent extends CallEvent<void> {
   constructor() {
     super('new_call')
+  }
+}
+
+export interface CallAcceptedDetails {
+  headers: HeaderList,
+}
+
+export class CallAcceptedEvent extends CallEvent<CallAcceptedDetails> {
+  constructor(headers: HeaderList) {
+    super('call_accepted', { headers })
   }
 }
 

@@ -35,6 +35,17 @@ window.addEventListener('DOMContentLoaded', () => {
     connectButton.innerHTML = images.endCall
   })
 
+  connectButton.addEventListener('call_accepted', (e) => {
+    const headers = e.detail.headers
+    console.log("Headers received from accept:", headers)
+    const dialogIds = headers
+      .filter(([name,]) => name.toLowerCase() == "x-cvg-dialogid")
+      .map(([, value]) => value)
+    if (dialogIds.length > 0) {
+      console.log(`DialogId: ${dialogIds[0]}`)
+    }
+  })
+
   connectButton.addEventListener('call_ended', (e: CallEndedEvent) => {
     connectButton.innerHTML = images.newCall
     if (e.detail !== null) {
