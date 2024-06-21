@@ -55,6 +55,10 @@ window.addEventListener('DOMContentLoaded', () => {
   })
 
   connectButton.setAttribute('environment', getAndDisplayEnvironmentFromQuery())
+  const forceCodec = query.get('force-codec')
+  if (forceCodec) {
+    connectButton.setAttribute('force-codec', forceCodec)
+  }
   for (let [name, value] of getCustomSipHeadersFromQuery()) {
     connectButton.setAttribute(name, value)
   }

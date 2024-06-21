@@ -78,6 +78,7 @@ export interface TelephonyApi {
    *                     No additional headers are sent by default.
    * @param mediaStream This is an optional media stream that can be supplied as the audio input to the call.
    *                    By default, UserMedia is requested and used without modification.
+   * @deprecated "use #createCall instead
    */
   call(
     target: string,
@@ -85,6 +86,25 @@ export interface TelephonyApi {
     iceGatheringTimeout: number,
     extraHeaders?: HeaderList,
     mediaStream?: MediaStream,
+  ): Promise<CallApi>
+
+  /**
+   * This method starts a new SIP call using the connected user agent.
+   *
+   * Note: Due to the authentication mechanism being used, each `TelephonyApi` instance can only be used for
+   *       a single successful call. After a call is successfully established, the credentials will be invalidated
+   *       and new credentials must be requested for additional calls.
+   *
+   * @param target The destination SIP address to be called. Since the user agent is only privileged to call
+   *               destinations local the SIP proxy, the local part of a SIP address is enough
+   *               (typically an E164 number).
+   * @param options This timeout (in milliseconds) is the maximum time it may take for the call to be fully established
+   *                (accepted by the remote party). The promise will be rejected with an object of
+   *                type `CallCreationTimedOut`.
+   */
+  createCall(
+    target: string,
+    options: CreateCallOptions,
   ): Promise<CallApi>
 
   /**
@@ -509,32 +529,6 @@ function assembleSdp(options: Array<SdpOption>): string {
   return sdp
 }
 
-function filterCodecs(sdp: string, codecPredicate: (name: string, rawName: string) => boolean): string {
-  const sdpOptions = parseSdp(sdp)
-
-  const supportedCodecsIds: Array<string> = []
-  for (const option of sdpOptions) {
-    if (option.type == "attribute" && option.attribute == 'rtpmap') {
-      const parts = binarySplit(option.value, ' ')
-      const codecId = parts[0]
-      const rawCodecName = parts[1]
-      const codecParts = binarySplit(rawCodecName, "/")
-      const codecName = codecParts[0]
-      if (codecPredicate(codecName, rawCodecName)) {
-        supportedCodecsIds.push(codecId)
-      }
-    }
-  }
-
-  for (const option of sdpOptions) {
-    if (option.type == "media" && option.media == "audio") {
-      option.codecs = supportedCodecsIds
-    }
-  }
-
-  return assembleSdp(sdpOptions)
-}
-
 function munchSdp(muncher: (sdp: string) => string, description?: { type?: RTCSdpType | undefined, sdp?: string}) {
   if (description && description.type === 'offer') {
     console.log("Original Local Description: " + description.sdp)
@@ -545,37 +539,60 @@ function munchSdp(muncher: (sdp: string) => string, description?: { type?: RTCSd
   }
 }
 
-function interceptLocalDescription(session: RTCSession) {
+function interceptLocalDescription(session: RTCSession, muncher: (sdp: string) => string) {
   const connection = session.connection
   if (!connection) {
     return
   }
 
-  const desiredCodecs = ["opus", "red", "cn", "telephone-event"]
-  const muncher = (sdp: string) => filterCodecs(sdp, (name) => desiredCodecs.indexOf(name.toLowerCase()) !== -1)
-
   const originalSetLocalDescription = connection.setLocalDescription.bind(connection)
-  connection.setLocalDescription = function(description?: RTCLocalSessionDescriptionInit) {
+  connection.setLocalDescription = async function(description?: RTCLocalSessionDescriptionInit) {
     try {
       munchSdp(muncher, description)
+      await originalSetLocalDescription(description)
     } catch (e) {
-      console.error("Error", e)
-      return Promise.reject(e)
+      console.error("Failed to set local description after SDP munching!", e)
+      throw e
     }
-    return originalSetLocalDescription(description).catch(e => {
-      console.error("Error", e)
-    })
   }
 }
 
-function setupSessionAndMedia(
+function filterCodecs(predicate: (name: string) => boolean): (sdp: string) => string {
+  const requiredCodecs: ReadonlyArray<string> = ["red", "cn", "telephone-event"]
+
+  return function(sdp: string) {
+    const sdpOptions = parseSdp(sdp)
+
+    const supportedCodecsIds: Array<string> = []
+    for (const option of sdpOptions) {
+      if (option.type == "attribute" && option.attribute == 'rtpmap') {
+        const parts = binarySplit(option.value, ' ')
+        const codecId = parts[0]
+        const rawCodecName = parts[1]
+        const codecParts = binarySplit(rawCodecName, "/")
+        const codecName = codecParts[0]
+        if (requiredCodecs.indexOf(codecName.toLowerCase()) !== -1 || predicate(codecName)) {
+          supportedCodecsIds.push(codecId)
+        }
+      }
+    }
+
+    for (const option of sdpOptions) {
+      if (option.type == "media" && option.media == "audio") {
+        option.codecs = supportedCodecsIds
+      }
+    }
+
+    return assembleSdp(sdpOptions)
+  }
+}
+
+async function setupSessionAndMedia(
   userAgent: UA,
   authDetails: WebRtcAuthenticationDetails,
   target: string,
-  extraSipHeaders: HeaderList,
-  iceGatheringTimeout: number,
   abortSignal: AbortSignal,
-  mediaStream: MediaStream | undefined,
+  options: CreateCallOptions,
 ): Promise<[RTCSession, MediaStream]> {
   const iceServers: Array<RTCIceServer> = []
   if (authDetails.stunUris.length > 0) {
@@ -585,8 +602,8 @@ function setupSessionAndMedia(
     iceServers.push({ urls: authDetails.turnUris, username: authDetails.username, credential: authDetails.password })
   }
   const callOptions: CallOptions = {
-    extraHeaders: extraSipHeaders?.map(([name, value]) => `${name}: ${value}`),
-    mediaStream,
+    extraHeaders: options.extraHeaders?.map(([name, value]) => `${name}: ${value}`),
+    mediaStream: options.mediaStream,
     mediaConstraints: {
       audio: true,
       video: false,
@@ -598,21 +615,24 @@ function setupSessionAndMedia(
 
   const rtcSessionPromise = awaitRtcSession(userAgent, abortSignal)
   userAgent.call(target, callOptions)
-  return rtcSessionPromise.then((session) => {
-    interceptLocalDescription(session)
-    handleIceCandidateGathering(session, iceGatheringTimeout)
-    const confirmationPromise = awaitSessionConfirmation(session, abortSignal)
-    const mediaPromise = awaitMediaConnection(session, abortSignal)
+  const session = await rtcSessionPromise
 
-    return Promise.all([confirmationPromise, mediaPromise]).then(() => {
-      const mediaStream = new MediaStream()
-      for (let receiver of session.connection.getReceivers()) {
-        if (receiver.track.kind == 'audio') {
-          mediaStream.addTrack(receiver.track)
-        }
+  const codecFilter = options.codecFilter
+  if (codecFilter !== undefined) {
+    interceptLocalDescription(session, filterCodecs(codecFilter))
+  }
+  handleIceCandidateGathering(session, options.iceGatheringTimeout)
+  const confirmationPromise = awaitSessionConfirmation(session, abortSignal)
+  const mediaPromise = awaitMediaConnection(session, abortSignal)
+
+  return Promise.all([confirmationPromise, mediaPromise]).then(() => {
+    const mediaStream = new MediaStream()
+    for (let receiver of session.connection.getReceivers()) {
+      if (receiver.track.kind == 'audio') {
+        mediaStream.addTrack(receiver.track)
       }
-      return [session, mediaStream]
-    })
+    }
+    return [session, mediaStream]
   })
 }
 
@@ -626,10 +646,7 @@ async function setupCall(
   userAgent: UA,
   authDetails: WebRtcAuthenticationDetails,
   target: string,
-  timeout: number,
-  extraHeaders: HeaderList,
-  iceGatheringTimeout: number,
-  mediaStream: MediaStream | undefined,
+  options: CreateCallOptions,
 ): Promise<CallApi> {
   const callAbortController = new AbortController()
   callAbortController.signal.addEventListener('abort', () => {
@@ -640,10 +657,10 @@ async function setupCall(
     const error: CallCreationTimedOut = {
       type: 'call-creation-timeout',
       sipAddress: authDetails.sipAddress,
-      timeout: timeout,
+      timeout: options.timeout,
     }
     callAbortController.abort(error)
-  }, timeout)
+  }, options.timeout)
 
   function clearConnectionTimeout() {
     if (timeoutId) {
@@ -660,10 +677,8 @@ async function setupCall(
     userAgent,
     authDetails,
     target,
-    extraHeaders,
-    iceGatheringTimeout,
     callAbortController.signal,
-    mediaStream,
+    options,
   )
   clearConnectionTimeout()
 
@@ -715,6 +730,47 @@ export interface SipClientOptions {
   sipUriArguments?: UriArgumentList
 }
 
+export type CodecFilter = (name: string) => boolean
+
+/**
+ * This interfaces specifies options to configure the call.
+ */
+export interface CreateCallOptions {
+  /**
+   * This timeout (in milliseconds) is the maximum time it may take for the call to be fully established
+   * (accepted by the remote party). The promise will be rejected with an object of
+   * type `CallCreationTimedOut`.
+   */
+  timeout: number,
+  /**
+   * This timeout (in milliseconds) is the maximum time the client waits for a new
+   * ICE candidate to arrive during the ICE gathering stage. So given a timeout of 250ms,
+   * if 3 candidates after a 100ms delay each, then the ICE gathering will take ~550ms
+   * in total. The time taken by ICE gathering also counts towards the time it takes to
+   * establish the call, so this value should always be lower than `timeout`.
+   */
+  iceGatheringTimeout: number,
+  /**
+   * This is an optional list of additional SIP headers that are sent as part of the INVITE message.
+   * Keep in mind that CVG will only forward custom headers (starting with `x-`) to bots.
+   * No additional headers are sent by default.
+   */
+  extraHeaders?: HeaderList,
+  /**
+   * This is an optional media stream that can be supplied as the audio input to the call.
+   * By default, UserMedia is requested and used without modification.
+   */
+  mediaStream?: MediaStream,
+
+  /**
+   * This function can be supplied to filter the list of codecs requested by the browser.
+   * Some codecs will always be included due to technical reasons.
+   * @param name the name of the codec as supplied by the browser
+   * @returns true to include the codec, false to exclude it
+   */
+  codecFilter?: CodecFilter,
+}
+
 /**
  * This function takes the give webrtc authentication details and uses them to connect to the SIP proxy
  * in order to allow SIP calling.
@@ -746,14 +802,25 @@ export async function setupSipClient(
 
   return {
     async call(target, timeout, iceGatheringTimeout, extraHeaders, mediaStream): Promise<CallApi> {
+      const options: CreateCallOptions = {
+        timeout,
+        iceGatheringTimeout,
+        extraHeaders,
+        mediaStream,
+      }
       return setupCall(
         ua,
         authDetails,
         target,
-        timeout,
-        extraHeaders ?? [],
-        iceGatheringTimeout,
-        mediaStream,
+        options,
+      )
+    },
+    async createCall(target, options: CreateCallOptions): Promise<CallApi> {
+      return setupCall(
+        ua,
+        authDetails,
+        target,
+        options,
       )
     },
     disconnect() {

@@ -106,6 +106,7 @@ export class CvgWebRtcButton extends HTMLElement {
       return
     }
 
+    const forceCodec = this.getAttribute('force-codec')
     const dtmfVolume = this.getAttribute('volume-dtmf') || '0'
 
     let darkMode: DarkMode | undefined = undefined
@@ -168,7 +169,10 @@ export class CvgWebRtcButton extends HTMLElement {
       },
       telephony: {
         sipHeaders: this.getCustomSipHeadersFromAttributes()
-      }
+      },
+      audio: {
+        codecFilter: forceCodec ? name => name.toLowerCase() == forceCodec.toLowerCase() : undefined
+      },
     }
 
     const setTriggerButtonEnabled = (enabled: boolean): void => {

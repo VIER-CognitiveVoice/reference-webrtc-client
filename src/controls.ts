@@ -1,5 +1,7 @@
 import {
   CallApi,
+  CodecFilter,
+  CreateCallOptions,
   DEFAULT_ICE_GATHERING_TIMEOUT,
   DtmfTone,
   fetchWebRtcAuthDetails,
@@ -9,6 +11,7 @@ import {
   ToneMap,
   UriArgumentList,
 } from './client'
+import { CallOptions } from 'jssip/lib/UA'
 
 const images = {
   // https://fontawesome.com/icons/phone-slash?s=solid&f=classic
@@ -71,6 +74,7 @@ export interface TimeoutOptions {
 export interface AudioOptions {
   context?: AudioContext
   outputNode?: AudioNode
+  codecFilter?: CodecFilter
 }
 
 export type KeypadMode = 'none' | 'standard' | 'full'
@@ -428,7 +432,13 @@ export function triggerControls(environment: string, resellerToken: string, dest
         const callTimeout = options?.timeout?.invite ?? DEFAULT_TIMEOUT
         const iceGatheringTimeout = options?.timeout?.iceGatheringTimeout ?? DEFAULT_ICE_GATHERING_TIMEOUT
         const headers = options?.telephony?.sipHeaders
-        return telephony.call(destination, callTimeout, iceGatheringTimeout, headers)
+        const createCallOptions: CreateCallOptions = {
+          timeout: callTimeout,
+          iceGatheringTimeout,
+          extraHeaders: headers,
+          codecFilter: options?.audio?.codecFilter,
+        }
+        return telephony.createCall(destination, createCallOptions)
           .then(call => {
             const [, controlsCleanup] = generateCallControls(call, options)
             call.callCompletion.then(() => {
