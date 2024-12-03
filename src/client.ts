@@ -312,7 +312,7 @@ function handleIceCandidateGathering(session: RTCSession, timeout: number): void
 
   session.once('icecandidate', (e: IceCandidateEvent) => {
     const acceptCandidates: VoidFunction = e.ready
-    let iceReadyTimeout: number | undefined = undefined
+    let iceReadyTimeout: any | undefined = undefined
 
     function logCandidate({ candidate }: { candidate: RTCIceCandidate | null }) {
       if (candidate) {
@@ -322,14 +322,14 @@ function handleIceCandidateGathering(session: RTCSession, timeout: number): void
 
     function clearReadyTimeout() {
       if (iceReadyTimeout !== undefined) {
-        window.clearTimeout(iceReadyTimeout)
+        clearTimeout(iceReadyTimeout)
         iceReadyTimeout = undefined
       }
     }
 
     function resetReadyTimeout() {
       clearReadyTimeout()
-      iceReadyTimeout = window.setTimeout(acceptCandidates, timeout)
+      iceReadyTimeout = setTimeout(acceptCandidates, timeout)
     }
 
     function handleGatheringStateChange() {
@@ -620,10 +620,10 @@ async function setupSessionAndMedia(
   userAgent.call(target, callOptions)
   const session = await rtcSessionPromise
   const acceptHeadersPromise: Promise<HeaderList> = new Promise((resolve) => {
-    let acceptTimeout = window.setTimeout(() => resolve([]), options.timeout)
+    let acceptTimeout = setTimeout(() => resolve([]), options.timeout)
 
     session.once('accepted', (event: OutgoingEvent) => {
-      window.clearTimeout(acceptTimeout)
+      clearTimeout(acceptTimeout)
       const response = event.response as any as {headers: JsSipMessageHeaders}
       const headers: HeaderList = []
       for (const headerName in response.headers) {
@@ -673,7 +673,7 @@ async function setupCall(
     userAgent.terminateSessions()
   }, { once: true })
 
-  const timeoutId = window.setTimeout(() => {
+  const timeoutId = setTimeout(() => {
     const error: CallCreationTimedOut = {
       type: 'call-creation-timeout',
       sipAddress: authDetails.sipAddress,
@@ -684,7 +684,7 @@ async function setupCall(
 
   function clearConnectionTimeout() {
     if (timeoutId) {
-      window.clearTimeout(timeoutId)
+      clearTimeout(timeoutId)
     }
   }
 
@@ -819,7 +819,7 @@ export async function setupSipClient(
     userAgentAbortController.abort(error)
   }, timeout)
   const ua = await setupRegisteredUserAgent(authDetails, options?.sipUriArguments, userAgentAbortController.signal)
-  window.clearTimeout(timeoutId)
+  clearTimeout(timeoutId)
 
   return {
     async call(target, timeout, iceGatheringTimeout, extraHeaders, mediaStream): Promise<CallApi> {
