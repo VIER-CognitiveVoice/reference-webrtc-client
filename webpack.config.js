@@ -6,6 +6,7 @@ module.exports = {
     entry: {
         "web-call-example": "./src/web-call-example.ts",
         "webaudio-example": "./src/webaudio-example.ts",
+        "loadtest-example": "./src/loadtest-example.ts",
         "webcomponent": "./src/webcomponent.ts",
     },
     output: {

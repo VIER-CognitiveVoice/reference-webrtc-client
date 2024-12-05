@@ -7,6 +7,7 @@ import {
 import {
   getAndDisplayEnvironmentFromQuery,
   getCustomSipHeadersFromQuery,
+  getDialogId,
   updateQueryParameter,
 } from './common-example'
 
@@ -38,11 +39,9 @@ window.addEventListener('DOMContentLoaded', () => {
   connectButton.addEventListener('call_accepted', (e) => {
     const headers = e.detail.acceptHeaders
     console.log("Headers received from accept:", headers)
-    const dialogIds = headers
-      .filter(([name,]) => name.toLowerCase() == "x-cvg-dialogid")
-      .map(([, value]) => value)
-    if (dialogIds.length > 0) {
-      console.log(`DialogId: ${dialogIds[0]}`)
+    const dialogId = getDialogId(headers)
+    if (dialogId) {
+      console.log(`DialogId: ${dialogId}`)
     }
   })
 

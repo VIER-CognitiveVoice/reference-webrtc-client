@@ -131,7 +131,7 @@ function performCall(
   })
 }
 
-function performAllCalls(
+async function performAllCalls(
   environment: string,
   resellerToken: string,
   destination: string,
@@ -144,22 +144,19 @@ function performAllCalls(
   const failed: Array<[DecodedAudioFile, any]> = []
   const workQueue = concurrencyLimitedWorkQueue<void>(maxParallelism)
   for (let file of files) {
-    workQueue.submit(() => {
-      return performCall(environment, resellerToken, destination, extraCustomSipHeaders, audioContext, file)
-        .then(() => {
-          console.info(`Call completed for: ${file.toString()}`)
-          completed.push(file)
-        })
-        .catch(e => {
-          console.info(`Call failed for: ${file.toString()}`, e)
-          failed.push([file, e])
-        })
+    workQueue.submit(async () => {
+      try {
+        await performCall(environment, resellerToken, destination, extraCustomSipHeaders, audioContext, file)
+        console.info(`Call completed for: ${file.toString()}`)
+        completed.push(file)
+      } catch (e) {
+        console.info(`Call failed for: ${file.toString()}`, e)
+        failed.push([file, e])
+      }
     })
   }
-
-  return workQueue.awaitEmpty().then(() => {
-    return [completed, failed]
-  })
+  await workQueue.awaitEmpty()
+  return [completed, failed]
 }
 
 function filesDropped(files: FileList): Promise<Array<DroppedAudioFile>> {

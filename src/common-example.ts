@@ -131,3 +131,70 @@ export function concurrencyLimitedWorkQueue<T>(maxConcurrency: number): WorkQueu
     }
   }
 }
+
+export function getDialogId(headers: HeaderList): string | undefined {
+  const dialogIds = headers
+    .filter(([name,]) => name.toLowerCase() == "x-vier-dialogid")
+    .map(([, value]) => value)
+  if (dialogIds.length > 0) {
+    return dialogIds[0]
+  }
+  return undefined
+}
+
+export interface BaseDialogDataEntry {
+  type: string,
+  timestamp: number
+}
+
+export interface StartDialogDataEntry extends BaseDialogDataEntry {
+  type: "Start"
+  customSipHeaders: {[name: string]: Array<string>}
+}
+
+export interface SynthesisDialogDataEntry extends BaseDialogDataEntry {
+  type: "Synthesis"
+  text: string
+  plainText: string
+  vendor: string
+  language: string
+}
+
+export interface ToneDialogDataEntry extends BaseDialogDataEntry {
+  type: "Tone"
+  tone: string
+  triggeredBargeIn: boolean
+}
+
+export interface TranscriptionDialogDataEntry extends BaseDialogDataEntry {
+  type: "Transcription"
+  text: string
+  confidence: number
+  vendor: string
+  language: string
+  triggeredBargeIn: boolean
+}
+
+export interface EndDialogDataEntry extends BaseDialogDataEntry {
+  type: "End"
+  reason: string
+}
+
+export type DialogDataEntry = StartDialogDataEntry | SynthesisDialogDataEntry | ToneDialogDataEntry | TranscriptionDialogDataEntry | EndDialogDataEntry | BaseDialogDataEntry
+
+export interface DialogDataResponse {
+  dialogId: string
+  callId?: string
+  data: Array<DialogDataEntry>
+}
+
+export async function fetchDialogData(environment: string, resellerToken: string, dialogId: string) {
+  const response = await fetch(`${environment}/v1/dialog/${resellerToken}/${dialogId}`)
+  return await response.json() as DialogDataResponse
+}
+
+export function delay(millis: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, millis)
+  })
+}
