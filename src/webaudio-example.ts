@@ -1,4 +1,5 @@
 import {
+  CreateCallOptions,
   DEFAULT_ICE_GATHERING_TIMEOUT,
   fetchWebRtcAuthDetails,
   HeaderList,
@@ -9,6 +10,7 @@ import {
   enableMediaStreamAudioInChrome,
 } from './controls'
 import {
+  concurrencyLimitedWorkQueue,
   getAndDisplayEnvironmentFromQuery,
   getCustomSipHeadersFromQuery,
   updateQueryParameter,
@@ -93,7 +95,13 @@ function performCall(
         localAudio.connect(channelSplitter)
         const virtualMic = audioContext.createMediaStreamDestination()
         channelSplitter.connect(virtualMic, file.channel);
-        return telephony.call(destination, DEFAULT_TIMEOUT, DEFAULT_ICE_GATHERING_TIMEOUT, headers, virtualMic.stream)
+        const options: CreateCallOptions = {
+          timeout: DEFAULT_TIMEOUT,
+          iceGatheringTimeout: DEFAULT_ICE_GATHERING_TIMEOUT,
+          extraHeaders: headers,
+          mediaStream: virtualMic.stream,
+        }
+        return telephony.createCall(destination, options)
           .then(callApi => {
             enableMediaStreamAudioInChrome(callApi.media)
             const remoteAudio = audioContext.createMediaStreamSource(callApi.media)
@@ -134,41 +142,24 @@ function performAllCalls(
 ): Promise<[Array<DecodedAudioFile>, Array<[DecodedAudioFile, any]>]> {
   const completed: Array<DecodedAudioFile> = []
   const failed: Array<[DecodedAudioFile, any]> = []
-  const remainingFiles = [...files]
-
-  return new Promise((resolve) => {
-
-    function perform(file: DecodedAudioFile) {
-      console.info(`Performing call for: ${file.toString()}`)
-      performCall(environment, resellerToken, destination, extraCustomSipHeaders, audioContext, file)
+  const workQueue = concurrencyLimitedWorkQueue<void>(maxParallelism)
+  for (let file of files) {
+    workQueue.submit(() => {
+      return performCall(environment, resellerToken, destination, extraCustomSipHeaders, audioContext, file)
         .then(() => {
           console.info(`Call completed for: ${file.toString()}`)
           completed.push(file)
-          performNext()
         })
         .catch(e => {
           console.info(`Call failed for: ${file.toString()}`, e)
           failed.push([file, e])
-          performNext()
         })
-    }
+    })
+  }
 
-    function performNext() {
-      if (remainingFiles.length > 0) {
-        const file = remainingFiles.pop()!
-        perform(file)
-      } else {
-        if (completed.length + failed.length == files.length) {
-          resolve([completed, failed])
-        }
-      }
-    }
-
-    for (let i = 0; i < Math.min(files.length, maxParallelism); ++i) {
-      performNext()
-    }
+  return workQueue.awaitEmpty().then(() => {
+    return [completed, failed]
   })
-
 }
 
 function filesDropped(files: FileList): Promise<Array<DroppedAudioFile>> {
