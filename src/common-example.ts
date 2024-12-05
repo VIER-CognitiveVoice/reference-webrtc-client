@@ -64,7 +64,7 @@ export function concurrencyLimitedWorkQueue<T>(maxConcurrency: number): WorkQueu
       return
     }
     const availableSlots = maxConcurrency - activeCount
-    if (availableSlots == 0) {
+    if (availableSlots === 0) {
       return
     }
 
@@ -87,14 +87,23 @@ export function concurrencyLimitedWorkQueue<T>(maxConcurrency: number): WorkQueu
     activeTasks.add(task)
     task.work().then(task.resolve, task.reject).finally(() => {
       activeTasks.delete(task)
-      runTasks()
+      runTasksDeferred()
     })
+  }
+
+  function runTasksDeferred() {
+    setTimeout(() => runTasks(), 0)
+  }
+
+  function submitTask(task: Task<T>) {
+    taskQueue.push(task)
+    runTasksDeferred()
   }
 
   return {
     submit(task: () => Promise<T>): Promise<T> {
       return new Promise<T>((resolve, reject) => {
-        taskQueue.push({
+        submitTask({
           work: task,
           resolve,
           reject,
