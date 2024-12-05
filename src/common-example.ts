@@ -188,8 +188,12 @@ export interface DialogDataResponse {
   data: Array<DialogDataEntry>
 }
 
+export function getDialogDataUrl(environment: string, resellerToken: string, dialogId: string): string {
+  return `${environment}/v1/dialog/${resellerToken}/${dialogId}`
+}
+
 export async function fetchDialogData(environment: string, resellerToken: string, dialogId: string) {
-  const response = await fetch(`${environment}/v1/dialog/${resellerToken}/${dialogId}`)
+  const response = await fetch(getDialogDataUrl(environment, resellerToken, dialogId))
   return await response.json() as DialogDataResponse
 }
 

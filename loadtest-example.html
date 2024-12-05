@@ -40,7 +40,48 @@
                     </div>
                 </div>
                 <div>
+                    <div>
+                        <label for="number-of-calls">Number of calls:</label>
+                        <input type="number" name="number-of-calls" id="number-of-calls" value="100" min="1">
+                    </div>
+                    <div>
+                        <label for="concurrency">Concurrency:</label>
+                        <input type="number" name="concurrency" id="concurrency" value="2" min="1">
+                    </div>
+                    <div>
+                        <label for="delay-before-drop">Delay before drop:</label>
+                        <input type="number" name ="delay-before-drop" id="delay-before-drop" value="5000" min="1">
+                    </div>
+                    <div>
+                        <label for="delay-after-drop">Delay after drop:</label>
+                        <input type="number" name="delay-after-drop" id="delay-after-drop" value="2000" min="1">
+                    </div>
+                </div>
+                <div>
                     <button id="start-calls">Start calls!</button>
+                </div>
+                <div id="progress" style="display: none">
+                    <div>
+                        Calls with no greeting: <span id="calls-no-greeting"></span>
+                    </div>
+                    <div>
+                        Calls with a single greeting: <span id="calls-single-greetings"></span>
+                    </div>
+                    <div>
+                        Calls with multiple greetings: <span id="calls-multiple-greetings"></span>
+                    </div>
+                    <div>
+                        Failed calls: <span id="calls-failed"></span>
+                    </div>
+                    <div>
+                        Completed calls: <span id="calls-completed"></span>
+                    </div>
+                    <div>
+                        Remaining calls: <span id="calls-remaining"></span>
+                    </div>
+                    <div>
+                        Calls in progress: <span id="calls-in-progress"></span>
+                    </div>
                 </div>
             </section>
         </main>
