@@ -106,12 +106,18 @@ export function concurrencyLimitedWorkQueue<T>(maxConcurrency: number): WorkQueu
       abortController.abort(reason)
       taskQueue.length = 0
       let remaining: Promise<any> = Promise.resolve()
-      for (let task of activeTasks) {
-        remaining = remaining.then(() => task).catch(() => task)
+      if (activeTasks.size > 0) {
+        for (let task of activeTasks) {
+          remaining = remaining.then(() => task).catch(() => task)
+        }
+        activeTasks.clear()
       }
       return remaining
     },
     awaitEmpty(): Promise<void> {
+      if (taskQueue.length === 0 && activeTasks.size === 0) {
+        return Promise.resolve()
+      }
       return new Promise(resolve => emptyPromises.push(resolve))
     }
   }
