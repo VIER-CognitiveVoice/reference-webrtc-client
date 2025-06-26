@@ -1,0 +1,25 @@
+{
+  "name": "@vier-cognitivevoice/reference-webrtc-client",
+  "version": "0.8.0",
+  "description": "Cognitive Voice Gateway Reference WebRTC Client",
+  "repository": "https://github.com/VIER-CognitiveVoice/reference-webrtc-client",
+  "main": "client.js",
+  "types": "client.d.ts",
+  "author": "Phillip Schichtel <phillip.schichtel@vier.ai>",
+  "license": "MIT",
+  "private": false,
+  "devDependencies": {
+    "raw-loader": "^4.0.2",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.7.2",
+    "webpack": "^5.97.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "jssip": "^3.10.1"
+  },
+  "scripts": {
+    "watch": "npx webpack -w",
+    "ghpages-build": "npx webpack && rm -Rf node_modules .gitignore"
+  }
+}

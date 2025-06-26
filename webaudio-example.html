@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>WebRTC Reference Client</title>
+        <meta charset="UTF-8">
+        <link rel="icon" type="image/png" href="favicon.png">
+        <link rel="stylesheet" type="text/css" href="index.css">
+        <link rel="stylesheet" type="text/css" href="webaudio.css">
+        <script type="module" src="dist/webaudio-example-bundle.js"></script>
+    </head>
+    <body>
+        <main>
+            <h1>
+                VIER Cognitive Voice Gateway<br>
+                WebRTC Reference Client
+            </h1>
+            <section>
+                <div class="form-field">
+                    <div>
+                        <label for="environment">Environment</label>
+                    </div>
+                    <div>
+                        <input id="environment" type="text" readonly disabled>
+                    </div>
+                </div>
+                <div class="form-field">
+                    <div>
+                        <label for="reseller-token">Reseller Token</label>
+                    </div>
+                    <div>
+                        <input id="reseller-token" name="reseller-token" type="text">
+                    </div>
+                </div>
+                <div class="form-field">
+                    <div>
+                        <label for="destination">Destination</label>
+                    </div>
+                    <div>
+                        <input id="destination" name="destination" type="tel">
+                    </div>
+                </div>
+                <div id="audio-drop-zone">
+                    <span>Drop Audio Here!</span>
+                </div>
+                <div id="files">
+                </div>
+                <div>
+                    <button id="start-calls">Start calls!</button>
+                </div>
+            </section>
+        </main>
+    </body>
+</html>
+

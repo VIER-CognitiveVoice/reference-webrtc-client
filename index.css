@@ -1,0 +1,66 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: Verdana, sans-serif;
+    font-size: 20px;
+    background-color: hsl(0, 0%, 93%);
+    height: 100%;
+    overflow: scroll;
+}
+
+body > main {
+    width: 500px;
+    margin: 20px auto;
+}
+
+body > main > h1 {
+    text-align: center;
+}
+
+a {
+    text-decoration: none;
+}
+
+input[type=text], input[type=tel] {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+div.form-field {
+    margin-bottom: 10px;
+}
+
+div#call-button {
+    margin-top: 50px;
+    text-align: center;
+}
+
+span#connect {
+    position: relative;
+}
+
+cvg-webrtc-button > svg {
+    display: block;
+    height: 25px;
+}
+
+cvg-webrtc-button::part(trigger) {
+    border: 0;
+    color: hsl(0, 0%, 80%);
+    fill: hsl(0, 0%, 80%);
+    background-color: hsl(120, 100%, 15%);
+    padding: 10px 20px;
+    border-radius: 4px;
+}
+cvg-webrtc-button::part(trigger-enabled):hover {
+    background-color: hsl(120, 100%, 30%);
+}
+cvg-webrtc-button::part(trigger-enabled):active {
+    color: hsl(0, 0%, 100%);
+    fill: hsl(0, 0%, 100%);
+}
+cvg-webrtc-button::part(trigger-disabled) {
+    background-color: hsl(0, 100%, 20%);
+    text-decoration: line-through;
+}
