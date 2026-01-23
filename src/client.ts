@@ -237,6 +237,7 @@ async function setupRegisteredUserAgent(
   const configuration: UAConfiguration = {
     sockets: authDetails.websocketUris.map(uri => new WebSocketInterface(uri.toString())),
     uri: `${authDetails.sipAddress}${encodeUriArguments(uriArguments ?? [])}`,
+    authorization_user: authDetails.username,
     password: authDetails.password,
   }
 
