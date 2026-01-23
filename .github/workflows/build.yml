@@ -19,7 +19,7 @@ jobs:
       - name: Run install
         run: npm ci
       - name: Build production bundle
-        run: npm ghpages-build
+        run: npm run-script ghpages-build
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
