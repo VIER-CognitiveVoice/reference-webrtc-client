@@ -16,7 +16,8 @@
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
-    "jssip": "^3.10.1"
+    "jssip": "3.10.1",
+    "@rtcstats/rtcstats-js": "2.1.0"
   },
   "scripts": {
     "watch": "npx webpack -w",
